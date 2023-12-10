@@ -1,6 +1,7 @@
 from mesa.visualization.modules import CanvasGrid, ChartModule
 from mesa.visualization.ModularVisualization import ModularServer
 from model import EcoModel, EcoAgent
+import random
 
 
 def agent_portrayal(agent):
@@ -16,19 +17,25 @@ def agent_portrayal(agent):
     return portrayal
 
 
+num_agents = 8
+
 # Set up the grid
 grid = CanvasGrid(agent_portrayal, 10, 10, 700, 700)
+
 chart_element = ChartModule(
     [
-        # {"Label": "Total Food", "Color": "#AA0000"},
         {"Label": "Total Money", "Color": "#AA0000"},
         {"Label": "Agents", "Color": "#AA00AA"},
         {"Label": "Average Money", "Color": "#AAAAAA"},
         {"Label": "Median Money", "Color": "#00AA00"},
+        # Total Trades
+        {"Label": "Total Trades", "Color": "#00A0AA"},
+        # Day Trades
+        {"Label": "Day Trades", "Color": "#00000A"},
 
-        # Food
-        # Money
-        # Production
+
+
+
     ]
 )
 
@@ -37,7 +44,7 @@ server = ModularServer(
     EcoModel,
     [grid, chart_element],
     "Eco Simulation",
-    {"width": 10, "height": 10, "num_agents": 20, }
+    {"width": 2, "height": 4, "num_agents": num_agents, }
 )
 server.port = 8521  # The default port number
 
