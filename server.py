@@ -1,4 +1,4 @@
-from mesa.visualization.modules import CanvasGrid
+from mesa.visualization.modules import CanvasGrid, ChartModule
 from mesa.visualization.ModularVisualization import ModularServer
 from model import EcoModel, EcoAgent
 
@@ -10,14 +10,26 @@ def agent_portrayal(agent):
         "Color": "red",
         "Layer": 0,
         "r": 0.5,
-        "text": f"Food: {round(agent.food,1)}",
-        "num_agents": len(agent.model.schedule.agents)  # Add the number of agents
+        "text_color": "black",
+        "text": f'''
+Food: {round(agent.food,1)}, 
+Money: {round(agent.money,1)}
+Production: {round(agent.production,1)} ''',
+        # Add the number of agents
+        "num_agents": len(agent.model.schedule.agents)
     }
     return portrayal
 
 
 # Set up the grid
-grid = CanvasGrid(agent_portrayal, 10, 10, 200, 200)
+grid = CanvasGrid(agent_portrayal, 10, 10, 500, 500)
+chart_element = ChartModule(
+    [
+        {"Label": "Wolves", "Color": "#AA0000"},
+        {"Label": "Sheep", "Color": "#666666"},
+        {"Label": "Grass", "Color": "#00AA00"},
+    ]
+)
 
 # Create and launch the server
 server = ModularServer(

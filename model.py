@@ -11,7 +11,7 @@ class EcoAgent(Agent):
         self.food = 10  # Starting food
         self.desired_food = 20  # Desired food
         self.money = 100  # Starting money
-        self.production = random.randrange(0, 2)  # Starting production
+        self.production = random.uniform(0, 2)  # Starting production
 
     def step(self):
         self.consume_resources()
@@ -20,6 +20,7 @@ class EcoAgent(Agent):
 
     def trade(self):
         # Attempt to trade with random neighbor
+
         neighbors = random.sample(self.model.schedule.agents, 1)
 
         self.model.register_trade(self, neighbors[0], 1, 1)
@@ -33,7 +34,7 @@ class EcoAgent(Agent):
 
     def produce_resources(self):
         # Agent resource production logic
-        self.food = self.food*self.production
+        self.food = self.food + 1*self.production
 
 
 class EcoModel(Model):
