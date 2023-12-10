@@ -11,32 +11,33 @@ def agent_portrayal(agent):
         "Layer": 0,
         "r": 0.5,
         "text_color": "black",
-        "text": f'''
-Food: {round(agent.food,1)}, 
-Money: {round(agent.money,1)}
-Production: {round(agent.production,1)} ''',
-        # Add the number of agents
-        "num_agents": len(agent.model.schedule.agents)
+        "text": f'''{round(agent.food,1)}={round(agent.money,1)}={round(agent.production,1)}''',
     }
     return portrayal
 
 
 # Set up the grid
-grid = CanvasGrid(agent_portrayal, 10, 10, 500, 500)
+grid = CanvasGrid(agent_portrayal, 10, 10, 700, 700)
 chart_element = ChartModule(
     [
-        {"Label": "Wolves", "Color": "#AA0000"},
-        {"Label": "Sheep", "Color": "#666666"},
-        {"Label": "Grass", "Color": "#00AA00"},
+        # {"Label": "Total Food", "Color": "#AA0000"},
+        {"Label": "Total Money", "Color": "#AA0000"},
+        {"Label": "Agents", "Color": "#AA00AA"},
+        {"Label": "Average Money", "Color": "#AAAAAA"},
+        {"Label": "Median Money", "Color": "#00AA00"},
+
+        # Food
+        # Money
+        # Production
     ]
 )
 
 # Create and launch the server
 server = ModularServer(
     EcoModel,
-    [grid],
+    [grid, chart_element],
     "Eco Simulation",
-    {"width": 10, "height": 10, "num_agents": 20}
+    {"width": 10, "height": 10, "num_agents": 20, }
 )
 server.port = 8521  # The default port number
 
