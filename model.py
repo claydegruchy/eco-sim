@@ -14,11 +14,12 @@ def random_string(length=5):
 class EcoAgent(Agent):
     def __init__(self, unique_id, model, color="red"):
         super().__init__(unique_id, model)
-        self.food = 10  # Starting food
+        self.food = 20  # Starting food
         self.desired_food = 20  # Desired food
         self.money = 100  # Starting money
         self.production = random.uniform(0, 2)  # Starting production
-        self.price_assumption = 5  # Starting price assumption
+        # Starting price assumption
+        self.price_assumption = 5 + random.uniform(-0.1, 0.1)
 
     def step(self):
         self.consume_resources()
@@ -69,7 +70,27 @@ class EcoAgent(Agent):
         # Update price assumption based on recent trades
         # do this in 5% increments of the average price based on if the previous trade was successful or not
 
-        pass
+        assumption_change = (ppu - self.price_assumption+0.1) * 0.05
+        abs_assumption_change = abs(self.desired_food - self.food)
+        # if theres a big difference between desired food and actual food, change the assumption faster by some proportion
+        # assumption_change *= abs_assumption_change / 10
+
+        def lower_assumption():
+            print(self.agent_name(), "lowering assumption by", assumption_change)
+            self.price_assumption -= assumption_change
+
+        def raise_assumption():
+            print(self.agent_name(), )
+            print(self.agent_name(), "raising assumption by", assumption_change)
+            self.price_assumption += assumption_change
+
+        if successful:
+            if ppu > self.price_assumption:
+                raise_assumption()
+            elif ppu < self.price_assumption:
+                lower_assumption()
+        else:
+            lower_assumption()
 
 
 class EcoModel(Model):
@@ -99,6 +120,7 @@ class EcoModel(Model):
         self.average_money = 0
         self.median_money = 0
         self.current_agents = num_agents
+        self.average_price_assumption = 5
 
         # Create agents
         for i in range(self.num_agents):
@@ -120,6 +142,7 @@ class EcoModel(Model):
                            "Median Money": "median_money",
                            "Total Trades": "total_trades",
                            "Day Trades": "day_trades",
+                           "Average Price Assumption": "average_price_assumption",
                            }
 
         self.datacollector = DataCollector(
@@ -239,8 +262,11 @@ class EcoModel(Model):
 
     def generate_stats(self):
         money_temp = 0
+        ass_temp = 0
         for x in self.schedule.agents:
             money_temp += x.money
+            ass_temp += x.price_assumption
+        self.average_price_assumption = (ass_temp/self.current_agents) * 10
         self.average_money = money_temp / self.current_agents
         self.median_money = statistics.median(
             [x.money for x in self.schedule.agents])

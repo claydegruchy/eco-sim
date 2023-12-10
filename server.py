@@ -17,7 +17,7 @@ def agent_portrayal(agent):
     return portrayal
 
 
-num_agents = 8
+num_agents = 20
 
 # Set up the grid
 grid = CanvasGrid(agent_portrayal, 10, 10, 700, 700)
@@ -32,6 +32,8 @@ chart_element = ChartModule(
         {"Label": "Total Trades", "Color": "#00A0AA"},
         # Day Trades
         {"Label": "Day Trades", "Color": "#00000A"},
+        # Average Price Assumption
+        {"Label": "Average Price Assumption", "Color": "#0A0000"}
 
 
 
@@ -44,7 +46,7 @@ server = ModularServer(
     EcoModel,
     [grid, chart_element],
     "Eco Simulation",
-    {"width": 2, "height": 4, "num_agents": num_agents, }
+    {"width": 5, "height": 4, "num_agents": num_agents, }
 )
 server.port = 8521  # The default port number
 
