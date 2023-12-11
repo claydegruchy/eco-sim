@@ -5,6 +5,7 @@ from mesa.datacollection import DataCollector
 import random
 import statistics
 from agent import EcoAgent
+import enum as Enum
 
 
 def random_string(length=5):
@@ -13,40 +14,69 @@ def random_string(length=5):
 
 
 class _Base_Order:
-    def __init__(self, quantity, ppu, unique_transaction_id):
+    def __init__(self, quantity, ppu, id=None):
         self.quantity = quantity
-        self.ppu = ppu
-        self.unique_transaction_id = unique_transaction_id
+        self.ppu = round(ppu, 3)
+        self.id = id
+        if id == None:
+            self.id = random_string()
 
     def __str__(self):
-        return f"UT:{self.unique_transaction_id} TYPE:{type(self).__name__} Q:{self.quantity} PPI:{self.ppu} "
-    
+        return f"ID:{self.id} V:{type(self).__name__} QTY:{self.quantity} PPU:{self.ppu} "
 
-# create a class for trades and orders
+    def __repr__(self):
+        return self.__str__()
+
+
 class Order(_Base_Order):
-    def __init__(self, initator, quantity, ppu, unique_transaction_id):
-        _Base_Order.__init__(self,  quantity,
-                             ppu, unique_transaction_id)
+    def __init__(self, type, initator, quantity, ppu, fulfilled=0):
+        _Base_Order.__init__(self,  quantity, ppu)
         self.initator = initator
+        self.type = type
+        self.fulfilled = fulfilled
+        self.inital_quantity = quantity
+        
+
+        if type not in ["buy", "sell"]:
+            raise Exception("Invalid order type, must be buy or sell")
+        print("Order created", self)
+
+    def __str__(self):
+        return f"ID:{self.id} O:{self.type} V:{type(self).__name__} QTY:{self.fulfilled}/{self.quantity} PPI:{self.ppu} "
+
+    def fulfill(self, quantity):
+        print("Order fulfilled", self)
+        self.fulfilled += quantity
+        self.quantity -= quantity
+
+    def is_fulfilled(self):
+        return self.fulfilled >= self.quantity
+
+    def resolve_order(self):
+        print(self,"Order resolved" )
+
+    def discard_order(self):
+        print(self, "Order discarded")
 
 
 class Trade(_Base_Order):
-    def __init__(self, seller, buyer, quantity, ppu, unique_transaction_id, state):
-        _Base_Order.__init__(self, quantity,
-                             ppu, unique_transaction_id)
-        # __spec__(Order).__init__(self, "market",
-        #   quantity, ppu, unique_transaction_id)
-        self.seller = seller
-        self.buyer = buyer
+    def __init__(self, sell_order, buy_order, quantity, ppu, state):
+        _Base_Order.__init__(self, quantity, ppu,
+                             sell_order.id + "=>" + buy_order.id)
+        self.sell_order = sell_order
+        self.buy_order = buy_order
         self.state = state
 
 
-O = Order("a", 1, 1, "a")
+# BO = Order('buy', "man1", 1, 1)
+# SO = Order('sell', "man2", 1, 1)
 
-T = Trade("a", "b", 1, 1, "a", "a")
-print(O)
+# T = Trade(SO, BO, 1, 1, "a")
+# print(BO)
+# print(SO)
+# print(T)
 
-exit()
+# exit()
 
 
 class EcoModel(Model):
@@ -112,68 +142,75 @@ class EcoModel(Model):
         )
 
     def register_buy_order(self, agent, ppu, quantity):
-        unique_transaction_id = "["+random_string()+"]"
-        print(unique_transaction_id, "Buy order registered", agent.unique_id,
-              "price:", ppu, "quantity:", quantity)
-        self.buy_orders.append([
-            agent,
-            ppu,
-            quantity,
-            unique_transaction_id,
-            0])
+        bo = Order('buy', agent, quantity, ppu)
+        self.buy_orders.append(bo)
 
     def register_sell_order(self, agent, ppu, quantity):
-        unique_transaction_id = "["+random_string()+"]"
-        print(unique_transaction_id, "Sell order registered", agent.unique_id,
-              "price:", ppu, "quantity:", quantity)
-        self.sell_orders.append([
-            agent,
-            ppu,
-            quantity,
-            unique_transaction_id,
-            0])
+        so = Order('sell', agent, quantity, ppu)
+        self.sell_orders.append(so)
 
     def resolve_orders(self):
         print("Market opened")
         self.day_trades = 0
 
         # sort from highest to lowest price
-        self.buy_orders.sort(key=lambda x: x[1], reverse=True)
+        self.buy_orders.sort(key=lambda x: x.ppu, reverse=True)
 
         # sort from lowest to highest price
-        self.sell_orders.sort(key=lambda x: x[1])
+        self.sell_orders.sort(key=lambda x: x.ppu)
+
+        print("Buy orders:", self.buy_orders)
+        print("Sell orders:", self.sell_orders)
 
         orders = min(len(self.buy_orders), len(self.sell_orders))
         while orders > 0:
+
+            #  self.sell_orders.append([
+            #         agent,
+            #         ppu,
+            #         quantity,
+            #         unique_transaction_id,
+            #         0])
+
+            # Order()
+            # Trade()
+            buy_order = self.buy_orders[0]
+            sell_order = self.sell_orders[0]
             # resolve the first order
             # find an average between the two prices
-            price = (self.buy_orders[0][1] + self.sell_orders[0][1]) / 2
-            quantity = min(self.buy_orders[0][2], self.sell_orders[0][2])
+            price = (buy_order.ppu + sell_order.ppu) / 2
+            quantity = min(buy_order.quantity, sell_order.quantity)
 
-            seller = self.sell_orders[0][0]
-            buyer = self.buy_orders[0][0]
+            # sell_order.initiator
+            # buy_order.initiator
 
-            # trade
-            self.register_trade(
-                seller, buyer, quantity, price, self.buy_orders[0][3] + "=>" + self.sell_orders[0][3])
+            trade = Trade(sell_order, buy_order, quantity, price, "unresolved")
 
-            self.sell_orders[0][2] -= quantity
-            self.sell_orders[0][4] += quantity
-            self.buy_orders[0][2] -= quantity
-            self.buy_orders[0][4] += quantity
+            # trade and fulfill the orders
+            self.register_trade(trade)
 
             # remove the order if it is empty, and tell the agent to update their price assumption
 
-            if self.sell_orders[0][2] <= 0:
-                print(self.sell_orders[0][3], "Sell order resolved",)
-                seller.update_price_assumption(
-                    'sell', True,  self.sell_orders[0][1], self.sell_orders[0][2], self.sell_orders[0][4], )
+            if sell_order.is_fulfilled():
+ 
+                sell_order.initator.update_price_assumption(
+                type='sell',
+                successful=True,
+                ppu=sell_order.ppu,
+                remaining_quantity=sell_order.quantity,
+                total_quantity=sell_order.inital_quantity,
+                )
+                
+                sell_order.resolve_order()
 
                 self.sell_orders.pop(0)
 
-            if self.buy_orders[0][2] <= 0:
-                print(self.buy_orders[0][3], "Buy order resolved",)
-                buyer.update_price_assumption(
+            if buy_order.is_fulfilled():
+                # [FIXME]
+                print(self.buy_orders[0][3]
+                "Buy order resolved",)
+                buy_order.initator.update_price_assumption(
+                    type, successful, ppu, remaining_quantity, total_quantity
                     'buy', True,  self.buy_orders[0][1], self.buy_orders[0][2], self.buy_orders[0][4], )
 
                 self.buy_orders.pop(0)
@@ -182,36 +219,37 @@ class EcoModel(Model):
 
         # discard all other orders, tell the failed agents to update their price assumptions
         for order in self.buy_orders:
-            print(order[3], order[0].agent_name(), "Buy order discarded, remaining:",
-                  order[2], "satisfied:", order[4])
-            order[0].update_price_assumption(
-                'buy', False, order[1], order[2], order[4], )
+            order.update_price_assumption(
+                type='buy', successful=False, ppu=order.ppu, remaining_quantity=order.quantity, total_quantity=order.inital_quantity)
+            order.discard_order()
         for order in self.sell_orders:
-            print(order[3], order[0].agent_name(), "sell order discarded, remaining:",
-                  order[2], "satisfied:", order[4])
-            order[0].update_price_assumption(
-                'sell', False, order[1], order[2], order[4], )
+            order.update_price_assumption(
+                type='sell', successful=False, ppu=order.ppu, remaining_quantity=order.quantity, total_quantity=order.inital_quantity)
 
         self.buy_orders.clear()
         self.sell_orders.clear()
 
         print("Market closed")
 
-    def register_trade(self, seller, buyer, quantity, price, unique_transaction_id):
+    def register_trade(self, trade: Trade):
         # register the trade
-        self.trades.append((seller, buyer, quantity, price))
-        print(unique_transaction_id, "Trade registered", seller.agent_name(), "to",
-              buyer.agent_name(), "quantity:", quantity, " at ppu:", price, "total:", price*quantity)
+        self.trades.append(trade)
+        # print(unique_transaction_id, "Trade registered", seller.agent_name(), "to",
+        #       buyer.agent_name(), "quantity:", quantity, " at ppu:", price, "total:", price*quantity)
+        # sort out the money
+        trade.sell_order.initator.money += trade.ppu*trade.quantity
+        trade.buy_order.initator.money -= trade.ppu*trade.quantity
+        # sort out the food
+        trade.sell_order.initator.food -= trade.quantity
+        trade.buy_order.initator.food += trade.quantity
+        # fulfill the orders
+        trade.sell_order.fulfill(trade.quantity)
+        trade.buy_order.fulfill(trade.quantity)
 
-        buyer.food += quantity
-        buyer.money -= price*quantity
-        seller.food -= quantity
-        seller.money += price*quantity
+        trade.state = "resolved"
 
         self.total_trades += 1
         self.day_trades += 10
-
-        # print("Trade registered")
 
     def next_id(self):
         self.current_id += 1
