@@ -130,14 +130,14 @@ class EcoModel(Model):
             if self.sell_orders[0][2] <= 0:
                 print(self.sell_orders[0][3], "Sell order resolved",)
                 seller.update_price_assumption(
-                    'sell', True,  self.sell_orders[0][1], self.sell_orders[0][2], self.sell_orders[0][3], )
+                    'sell', True,  self.sell_orders[0][1], self.sell_orders[0][2], self.sell_orders[0][4], )
 
                 self.sell_orders.pop(0)
 
             if self.buy_orders[0][2] <= 0:
                 print(self.buy_orders[0][3], "Buy order resolved",)
                 buyer.update_price_assumption(
-                    'buy', True,  self.buy_orders[0][1], self.buy_orders[0][2], self.buy_orders[0][3], )
+                    'buy', True,  self.buy_orders[0][1], self.buy_orders[0][2], self.buy_orders[0][4], )
 
                 self.buy_orders.pop(0)
 
@@ -148,12 +148,12 @@ class EcoModel(Model):
             print(order[3], order[0].agent_name(), "Buy order discarded, remaining:",
                   order[2], "satisfied:", order[4])
             order[0].update_price_assumption(
-                'buy', False, order[1], order[2], order[3], )
+                'buy', False, order[1], order[2], order[4], )
         for order in self.sell_orders:
             print(order[3], order[0].agent_name(), "sell order discarded, remaining:",
                   order[2], "satisfied:", order[4])
             order[0].update_price_assumption(
-                'sell', False, order[1], order[2], order[3], )
+                'sell', False, order[1], order[2], order[4], )
 
         self.buy_orders.clear()
         self.sell_orders.clear()
