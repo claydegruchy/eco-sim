@@ -58,7 +58,7 @@ class EcoAgent(Agent):
         self.food = self.food + produced
         self.model.total_food += produced
 
-    def update_price_assumption(self, type, successful, ppu, remaining_quantity):
+    def update_price_assumption(self, type, successful, ppu, remaining_quantity, total_quantity):
         # Update price assumption based on recent trades
         # do this in 5% increments of the average price based on if the previous trade was successful or not
 
