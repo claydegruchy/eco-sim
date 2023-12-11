@@ -12,6 +12,43 @@ def random_string(length=5):
     return ''.join(random.choice(x) for _ in range(length))
 
 
+class _Base_Order:
+    def __init__(self, quantity, ppu, unique_transaction_id):
+        self.quantity = quantity
+        self.ppu = ppu
+        self.unique_transaction_id = unique_transaction_id
+
+    def __str__(self):
+        return f"UT:{self.unique_transaction_id} TYPE:{type(self).__name__} Q:{self.quantity} PPI:{self.ppu} "
+    
+
+# create a class for trades and orders
+class Order(_Base_Order):
+    def __init__(self, initator, quantity, ppu, unique_transaction_id):
+        _Base_Order.__init__(self,  quantity,
+                             ppu, unique_transaction_id)
+        self.initator = initator
+
+
+class Trade(_Base_Order):
+    def __init__(self, seller, buyer, quantity, ppu, unique_transaction_id, state):
+        _Base_Order.__init__(self, quantity,
+                             ppu, unique_transaction_id)
+        # __spec__(Order).__init__(self, "market",
+        #   quantity, ppu, unique_transaction_id)
+        self.seller = seller
+        self.buyer = buyer
+        self.state = state
+
+
+O = Order("a", 1, 1, "a")
+
+T = Trade("a", "b", 1, 1, "a", "a")
+print(O)
+
+exit()
+
+
 class EcoModel(Model):
     def __init__(self, width, height, num_agents):
         super().__init__()

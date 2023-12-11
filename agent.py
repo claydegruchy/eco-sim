@@ -2,6 +2,7 @@ from mesa import Agent
 import random
 
 
+
 def percent(part, whole):
     # normalize to either 0 or 1
     # remaining_quantity, total_quantity
@@ -72,8 +73,8 @@ class EcoAgent(Agent):
         # if we were very unsuccessful, change the assumption by a larger amount
         sale_percent = percent(remaining_quantity, total_quantity)
 
+        #  this speeds up the assumption change if the agent is very far from their desired price
         assumption_change = (self.price_assumption *
-                             #  this speeds up the assumption change if the agent is very far from their desired food
                              (0.05+(sale_percent*0.15)))
 
         assumption_change = round(assumption_change, 3)
