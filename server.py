@@ -1,7 +1,7 @@
 from mesa.visualization.modules import CanvasGrid, ChartModule
 from mesa.visualization.ModularVisualization import ModularServer
-from model import EcoModel, EcoAgent
-import random
+from model import EcoModel
+# from agent import EcoAgent
 
 
 def agent_portrayal(agent):

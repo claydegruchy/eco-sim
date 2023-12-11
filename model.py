@@ -1,96 +1,15 @@
-from mesa import Agent, Model
+from mesa import Model
 from mesa.time import RandomActivation
 from mesa.space import SingleGrid
 from mesa.datacollection import DataCollector
 import random
 import statistics
+from agent import EcoAgent
 
 
 def random_string(length=5):
     x = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
     return ''.join(random.choice(x) for _ in range(length))
-
-
-class EcoAgent(Agent):
-    def __init__(self, unique_id, model, color="red"):
-        super().__init__(unique_id, model)
-        self.food = 20  # Starting food
-        self.desired_food = 20  # Desired food
-        self.money = 100  # Starting money
-        self.production = random.uniform(0, 2)  # Starting production
-        # Starting price assumption
-        self.price_assumption = 5 + random.uniform(-0.1, 0.1)
-
-    def step(self):
-        self.consume_resources()
-        self.produce_resources()
-        self.trade()
-
-    def agent_name(self):
-        return f"Agent {self.unique_id}"
-
-    def trade(self):
-        # Attempt to place a trade in the local market
-
-        if self.food > self.desired_food:
-            # attempt to sell
-            quantity = round(self.food - self.desired_food, 0)
-            if quantity > 0:
-                self.model.register_sell_order(
-                    self,
-                    self.price_assumption,
-                    quantity
-                )
-        elif self.food < self.desired_food:
-            # attempt to buy
-            if self.money < 0:
-                return
-            quantity = round(self.desired_food - self.food, 0)
-            if quantity > 0:
-                self.model.register_buy_order(
-                    self,
-                    self.price_assumption,
-                    quantity
-                )
-
-    def consume_resources(self):
-        # Agent resource consumption logic
-        self.food -= 1
-        if self.food <= 0:
-            self.food = 0
-            self.model.kill_agents.append(self)
-
-    def produce_resources(self):
-        # Agent resource production logic
-        produced = 1*self.production
-        self.food = self.food + produced
-        self.model.total_food += produced
-
-    def update_price_assumption(self, successful, ppu, remaining_quantity):
-        # Update price assumption based on recent trades
-        # do this in 5% increments of the average price based on if the previous trade was successful or not
-
-        assumption_change = (ppu - self.price_assumption+0.1) * 0.05
-        abs_assumption_change = abs(self.desired_food - self.food)
-        # if theres a big difference between desired food and actual food, change the assumption faster by some proportion
-        # assumption_change *= abs_assumption_change / 10
-
-        def lower_assumption():
-            print(self.agent_name(), "lowering assumption by", assumption_change)
-            self.price_assumption -= assumption_change
-
-        def raise_assumption():
-            print(self.agent_name(), )
-            print(self.agent_name(), "raising assumption by", assumption_change)
-            self.price_assumption += assumption_change
-
-        if successful:
-            if ppu > self.price_assumption:
-                raise_assumption()
-            elif ppu < self.price_assumption:
-                lower_assumption()
-        else:
-            lower_assumption()
 
 
 class EcoModel(Model):
@@ -211,14 +130,14 @@ class EcoModel(Model):
             if self.sell_orders[0][2] <= 0:
                 print(self.sell_orders[0][3], "Sell order resolved",)
                 seller.update_price_assumption(
-                    True, self.sell_orders[0][1], self.sell_orders[0][2])
+                    'sell', True,  self.sell_orders[0][1], self.sell_orders[0][2])
 
                 self.sell_orders.pop(0)
 
             if self.buy_orders[0][2] <= 0:
                 print(self.buy_orders[0][3], "Buy order resolved",)
                 buyer.update_price_assumption(
-                    True, self.buy_orders[0][1], self.buy_orders[0][2])
+                    'buy', True,  self.buy_orders[0][1], self.buy_orders[0][2])
 
                 self.buy_orders.pop(0)
 
@@ -228,12 +147,13 @@ class EcoModel(Model):
         for order in self.buy_orders:
             print(order[3], order[0].agent_name(), "Buy order discarded, remaining:",
                   order[2], "satisfied:", order[4])
-            order[0].update_price_assumption(False, order[1], order[2])
+            order[0].update_price_assumption('buy',
+                                             False, order[1], order[2])
         for order in self.sell_orders:
             print(order[3], order[0].agent_name(), "sell order discarded, remaining:",
                   order[2], "satisfied:", order[4])
-            order[0].update_price_assumption(
-                False, order[1], order[2])
+            order[0].update_price_assumption('sell',
+                                             False, order[1], order[2])
 
         self.buy_orders.clear()
         self.sell_orders.clear()
