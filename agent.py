@@ -1,14 +1,25 @@
 from mesa import Agent
 import random
-
+import numpy as np
 
 
 def percent(part, whole):
     # normalize to either 0 or 1
-    # remaining_quantity, total_quantity
+    # remaining_quantity, inital_quantity
     if part == 0.0 or whole == 0.0:
         return 0.0
     return float(part)/float(whole)
+
+
+# def scale_range(input, min, max):
+#     input = input + -(np.min(input))
+#     input = input / np.max(input) / (max - min)
+#     input = input + min
+#     return input.tolist()
+
+
+# print(scale_range([0,5,10], 0, 1))
+# exit()
 
 
 class EcoAgent(Agent):
@@ -18,8 +29,24 @@ class EcoAgent(Agent):
         self.desired_food = 20  # Desired food
         self.money = 100  # Starting money
         self.production = random.uniform(0, 2)  # Starting production
+
+        self.orders = []
         # Starting price assumption
-        self.price_assumption = 5 + random.uniform(-0.1, 0.1)
+        self.price_assumption_top = 6 + random.uniform(-0.1, 0.1)
+        self.price_assumption_bottom = 4 + random.uniform(-0.1, 0.1)
+        self.latest_market_price = (
+            self.price_assumption_top + self.price_assumption_bottom)/2
+
+    def clear_orders(self):
+        self.orders = []
+
+    def average_price_assumption(self):
+        # Average price assumption
+        return self.price_assumption_top + self.price_assumption_bottom / 2
+
+    def random_price_assumption(self):
+        # Average price assumption
+        return random.uniform(self.price_assumption_bottom, self.price_assumption_top)
 
     def step(self):
         self.consume_resources()
@@ -30,76 +57,104 @@ class EcoAgent(Agent):
         return f"Agent {self.unique_id}"
 
     def trade(self):
-        # Attempt to place a trade in the local market
+        '''
+        Determine-Sale-Quantity(Commodity)
+            1 mean←historical mean price of Commodity
+            2 favorability←position of mean within observed trading range
+            3 amount to sell ←favorability * excess inventory of Commodity
+            4 return amount to sell
 
-        if self.food > self.desired_food:
-            # attempt to sell
-            quantity = round(self.food - self.desired_food, 0)
-            if quantity > 0:
-                self.model.register_sell_order(
-                    self,
-                    self.price_assumption,
-                    quantity
-                )
-        elif self.food < self.desired_food:
-            # attempt to buy
-            if self.money < 0:
-                return
-            quantity = round(self.desired_food - self.food, 0)
-            if quantity > 0:
-                self.model.register_buy_order(
-                    self,
-                    self.price_assumption,
-                    quantity
-                )
+        '''
+
+        market_average = self.latest_market_price
+        favorability = percent(market_average, self.average_price_assumption())
+        quantity = favorability * (self.food - self.desired_food)
+        quantity = round(quantity, 1)
+        if quantity > -1 and quantity < 1:
+            quantity = 0
+        price = self.random_price_assumption()
+        # print("market_average", market_average)
+        # print("average_price_assumption", self.average_price_assumption())
+        # print("favorability", favorability)
+        # print("quantity", quantity)
+        if price > self.money:
+            price = self.average_price_assumption()
+            if price > self.money:
+                price = self.money
+
+        if quantity < 0:
+            # we want to buy from the market
+            self.model.register_buy_order(
+                self,
+                price,
+                abs(quantity)
+            )
+        if quantity > 0:
+            # we want to sell to the market
+            self.model.register_sell_order(
+                self,
+                price,
+                abs(quantity)
+            )
 
     def consume_resources(self):
         # Agent resource consumption logic
         self.food -= 1
         if self.food <= 0:
             self.food = 0
-            self.model.kill_agents.append(self)
+            self.starve()
 
     def produce_resources(self):
         # Agent resource production logic
-        produced = 1*self.production
+        produced = random.gauss(self.production, 0.5)  # *self.production
         self.food = self.food + produced
         self.model.total_food += produced
 
-    def update_price_assumption(self, type, successful, ppu, remaining_quantity, total_quantity):
-        # Update price assumption based on recent trades
-        # do this in 5% increments of the average price based on if the previous trade was successful or not
+    def update_price_assumption(self, orders, today_price):
 
-        # if we were very unsuccessful, change the assumption by a larger amount
-        sale_percent = percent(remaining_quantity, total_quantity)
+        # dont base the assumptions directly on the market price
+        # this is factored when choosing the sell price in the trade function
+        self.latest_market_price = today_price
+        # this should only use the orders that have been fulfilled
+        # the ideal situation is to have a 50/50 split of fulfilled orders
 
-        #  this speeds up the assumption change if the agent is very far from their desired price
-        assumption_change = (self.price_assumption *
-                             (0.05+(sale_percent*0.15)))
+        for order in orders:
 
-        assumption_change = round(assumption_change, 3)
-        abs_assumption_change = abs(self.desired_food - self.food)
-        # if theres a big difference between desired food and actual food, change the assumption faster by some proportion
-        # assumption_change *= abs_assumption_change / 10
+            change = 0.05
 
-        def lower_assumption():
-            print(self.agent_name(), "lowering assumption by", assumption_change)
-            self.price_assumption -= assumption_change
+            ppu = order.ppu
 
-        def raise_assumption():
-            print(self.agent_name(), "raising assumption by", assumption_change)
-            self.price_assumption += assumption_change
+            if ppu > self.price_assumption_top:
+                print(
+                    f"[{order.type}]Ripoff! i paid too much {ppu} but i thought it was {self.price_assumption_top}")
+                self.price_assumption_top = (
+                    self.price_assumption_top * (1+change))
+                continue
 
-        def pick_type():
-            if type == "buy":
-                return raise_assumption
-            elif type == "sell":
-                return lower_assumption
+            if ppu < self.price_assumption_bottom:
+                print(
+                    f"[{order.type}]cheap! i paid {ppu} but i thought it was {self.price_assumption_top}")
+                self.price_assumption_bottom = (
+                    self.price_assumption_bottom * (1-change))
+                continue
 
-        if successful:
-            if ppu > self.price_assumption:
-                pick_type()()
-            elif ppu < self.price_assumption:
-                pick_type()()
-        else:
-            pick_type()()
+            if self.price_assumption_bottom <= ppu <= self.price_assumption_top:
+                print(
+                    f"[{order.type}]we are in the sweet spot, i paid {ppu}, right in the middle of {self.price_assumption_bottom} and {self.price_assumption_top}")
+                # narrow the range
+                self.price_assumption_top = (
+                    self.price_assumption_top * (1-change))
+                self.price_assumption_bottom = (
+                    self.price_assumption_bottom * (1+change))
+                continue
+
+    def starve(self):
+        print("Agent starving", self.unique_id)
+        if (random.random() < 0.2):
+            self.die()
+
+    def die(self):
+        # this is called when the agent is starving
+        self.model.schedule.remove(self)
+        self.model.grid.remove_agent(self)
+        print("Agent died", self.unique_id)
