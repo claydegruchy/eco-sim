@@ -28,8 +28,6 @@ class EcoModel(Model):
         self.current_id = 0
 
         self.num_agents = num_agents
-        # utility variables
-        self.kill_agents = []
 
         # trade variables
         self.trades = []
@@ -194,13 +192,6 @@ class EcoModel(Model):
 
         self.resolve_orders()
 
-        for x in self.kill_agents:
-            if (random.random() < 0.2):
-
-                print("Agent died", x.unique_id)
-                # self.grid.remove_agent(x)
-                # self.schedule.remove(x)
-        self.kill_agents.clear()
         self.current_agents = self.schedule.get_agent_count()
         self.update_trade_history()
         self.update_price_assumptions()

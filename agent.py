@@ -102,11 +102,11 @@ class EcoAgent(Agent):
         self.food -= 1
         if self.food <= 0:
             self.food = 0
-            self.model.kill_agents.append(self)
+            self.starve()
 
     def produce_resources(self):
         # Agent resource production logic
-        produced = random.gauss(1, 0.5)  # *self.production
+        produced = random.gauss(self.production, 0.5)  # *self.production
         self.food = self.food + produced
         self.model.total_food += produced
 
@@ -122,23 +122,7 @@ class EcoAgent(Agent):
 
             change = 0.05
 
-            inital_quantity = order.inital_quantity
-            fulfilled = order.fulfilled
             ppu = order.ppu
-
-            # if fulfilled == 0:
-            #     self.price_assumption_bottom = (
-            #         self.price_assumption_bottom * (1-change))
-            #     continue
-
-            # if fulfilled == inital_quantity:
-            #     self.price_assumption_top = (
-            #         self.price_assumption_top * (1+change))
-            #     continue
-
-            target = inital_quantity/2
-
-            change_proportion = percent(fulfilled, target)-1
 
             if ppu > self.price_assumption_top:
                 print(
@@ -164,23 +148,13 @@ class EcoAgent(Agent):
                     self.price_assumption_bottom * (1+change))
                 continue
 
-            # if change_proportion == 1:
-            #     # i may have been ripped off, increase my price assumption
-            #     if order.type == "buy":
-            #         self.price_assumption_bottom *= (1+(change_proportion*change))
-            #     self.price_assumption_top *= (1+(change_proportion*change))
+    def starve(self):
+        print("Agent starving", self.unique_id)
+        if (random.random() < 0.2):
+            self.die()
 
-            # print("change_proportion", change_proportion, 1 +
-            #       (change_proportion*change), f"{fulfilled}/{inital_quantity}")
-            # print("costs", order.ppu, self.average_price_assumption())
-
-            # self.price_assumption_bottom *= (1+(change_proportion*change))
-            # self.price_assumption_top *= (1+(change_proportion*change))
-
-            # self.price_assumption_top =
-
-    def dying(self):
+    def die(self):
         # this is called when the agent is starving
-        print("Agent dying", self.unique_id)
-        # self.model.schedule.remove(self)
-        # self.model.grid.remove_agent(self)
+        self.model.schedule.remove(self)
+        self.model.grid.remove_agent(self)
+        print("Agent died", self.unique_id)

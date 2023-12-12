@@ -8,7 +8,7 @@ def agent_portrayal(agent):
     portrayal = {
         "Shape": "circle",
         "Filled": "true",
-        "Color": "red",
+        "Color": "pink",
         "Layer": 0,
         "r": 0.5,
         "text_color": "black",
@@ -20,7 +20,7 @@ def agent_portrayal(agent):
 num_agents = 20
 
 # Set up the grid
-grid = CanvasGrid(agent_portrayal, 10, 10, 500, 500)
+grid = CanvasGrid(agent_portrayal, 10, 10, 860, 200)
 
 chart_element = ChartModule(
     [
