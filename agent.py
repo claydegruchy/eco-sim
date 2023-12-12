@@ -1,5 +1,6 @@
 from mesa import Agent
 import random
+import numpy as np
 
 
 def percent(part, whole):
@@ -10,10 +11,21 @@ def percent(part, whole):
     return float(part)/float(whole)
 
 
+# def scale_range(input, min, max):
+#     input = input + -(np.min(input))
+#     input = input / np.max(input) / (max - min)
+#     input = input + min
+#     return input.tolist()
+
+
+# print(scale_range([0,5,10], 0, 1))
+# exit()
+
+
 class EcoAgent(Agent):
     def __init__(self, unique_id, model, color="red"):
         super().__init__(unique_id, model)
-        self.food = 10  # Starting food
+        self.food = 20  # Starting food
         self.desired_food = 20  # Desired food
         self.money = 100  # Starting money
         self.production = random.uniform(0, 2)  # Starting production
@@ -94,45 +106,81 @@ class EcoAgent(Agent):
 
     def produce_resources(self):
         # Agent resource production logic
-        produced = 1*self.production
+        produced = random.gauss(1, 0.5)  # *self.production
         self.food = self.food + produced
         self.model.total_food += produced
 
     def update_price_assumption(self, orders, today_price):
 
+        # dont base the assumptions directly on the market price
+        # this is factored when choosing the sell price in the trade function
         self.latest_market_price = today_price
+        # this should only use the orders that have been fulfilled
+        # the ideal situation is to have a 50/50 split of fulfilled orders
 
         for order in orders:
+
+            change = 0.05
+
             inital_quantity = order.inital_quantity
             fulfilled = order.fulfilled
             ppu = order.ppu
 
-            # if we sold none
-            if fulfilled == 0:
-                # did we charge too much?
-                # if order.ppu > self.price_assumption_top:
-                # lower our top assumption
-                self.price_assumption_top *= 0.95
-                # maybe our minimum price is too high?
-                # if order.ppu < self.price_assumption_bottom:
-                # lower our bottom assumption
-                self.price_assumption_bottom *= 0.95
+            # if fulfilled == 0:
+            #     self.price_assumption_bottom = (
+            #         self.price_assumption_bottom * (1-change))
+            #     continue
+
+            # if fulfilled == inital_quantity:
+            #     self.price_assumption_top = (
+            #         self.price_assumption_top * (1+change))
+            #     continue
+
+            target = inital_quantity/2
+
+            change_proportion = percent(fulfilled, target)-1
+
+            if ppu > self.price_assumption_top:
+                print(
+                    f"Ripoff! i paid {ppu} but i thought it was {self.price_assumption_top}")
+                self.price_assumption_top = (
+                    self.price_assumption_top * (1+change))
                 continue
 
-            # if we sold all
-            if fulfilled == inital_quantity:
-                # this is worth more than we thought
-                self.price_assumption_top *= 1.05
-                self.price_assumption_bottom *= 1.05
+            if ppu < self.price_assumption_bottom:
+                print(
+                    f"cheap! i paid {ppu} but i thought it was {self.price_assumption_top}")
+                self.price_assumption_bottom = (
+                    self.price_assumption_bottom * (1-change))
                 continue
 
-            # if we sold some
-            if fulfilled > 0:
-                # we want to hinge the price on 50% of the order
-                # so if we sold less than 50% of the order, lower slightly, if we sold more than 50% of the order, raise slightly
-
-                if self.latest_market_price < self.average_price_assumption():
-                    self.price_assumption_top *= 0.95
-                else:
-                    self.price_assumption_bottom *= 1.05
+            if self.price_assumption_bottom <= ppu <= self.price_assumption_top:
+                print(
+                    f"we are in the sweet spot, i paid {ppu}, right in the middle of {self.price_assumption_bottom} and {self.price_assumption_top}")
+                # narrow the range
+                self.price_assumption_top = (
+                    self.price_assumption_top * (1-change))
+                self.price_assumption_bottom = (
+                    self.price_assumption_bottom * (1+change))
                 continue
+
+            # if change_proportion == 1:
+            #     # i may have been ripped off, increase my price assumption
+            #     if order.type == "buy":
+            #         self.price_assumption_bottom *= (1+(change_proportion*change))
+            #     self.price_assumption_top *= (1+(change_proportion*change))
+
+            # print("change_proportion", change_proportion, 1 +
+            #       (change_proportion*change), f"{fulfilled}/{inital_quantity}")
+            # print("costs", order.ppu, self.average_price_assumption())
+
+            # self.price_assumption_bottom *= (1+(change_proportion*change))
+            # self.price_assumption_top *= (1+(change_proportion*change))
+
+            # self.price_assumption_top =
+
+    def dying(self):
+        # this is called when the agent is starving
+        print("Agent dying", self.unique_id)
+        # self.model.schedule.remove(self)
+        # self.model.grid.remove_agent(self)

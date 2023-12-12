@@ -20,7 +20,7 @@ def agent_portrayal(agent):
 num_agents = 20
 
 # Set up the grid
-grid = CanvasGrid(agent_portrayal, 10, 10, 1000, 1000)
+grid = CanvasGrid(agent_portrayal, 10, 10, 500, 500)
 
 chart_element = ChartModule(
     [
@@ -33,7 +33,11 @@ chart_element = ChartModule(
         # Day Trades
         {"Label": "Day Trades", "Color": "#00000A"},
         # Average Price Assumption
-        {"Label": "Average Price Assumption", "Color": "#0A0000"}
+        {"Label": "Average Price Assumption", "Color": "#0A0000"},
+        # avg_price_assumption_bottom
+        {"Label": "avg_price_assumption_bottom", "Color": "#0B0000"},
+        # avg_price_assumption_top
+        {"Label": "avg_price_assumption_top", "Color": "#B00000"},
 
 
 

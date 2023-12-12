@@ -46,7 +46,9 @@ class EcoModel(Model):
         self.average_money = 0
         self.median_money = 0
         self.current_agents = num_agents
-        self.average_price_assumption = 5
+        # self.average_price_assumption = 5
+        self.avg_price_assumption_bottom = 0
+        self.avg_price_assumption_top = 0
 
         # Create agents
         for i in range(self.num_agents):
@@ -68,14 +70,17 @@ class EcoModel(Model):
                            "Median Money": "median_money",
                            "Total Trades": "total_trades",
                            "Day Trades": "day_trades",
-                           "Average Price Assumption": "average_price_assumption",
+                           #    "Average Price Assumption": "average_price_assumption",
+                           "avg_price_assumption_bottom": "avg_price_assumption_bottom",
+                           "avg_price_assumption_top": "avg_price_assumption_top",
                            }
 
         self.datacollector = DataCollector(
             agent_reporters={"Food": "food",
                              "Money": "money",
                              "Production": "production",
-                             "Desired Food": "desired_food",
+
+
                              },
             model_reporters=model_reporters
 
@@ -154,8 +159,6 @@ class EcoModel(Model):
         ass_temp = 0
         for x in self.schedule.agents:
             money_temp += x.money
-            ass_temp += x.average_price_assumption()
-        self.average_price_assumption = (ass_temp/self.current_agents) * 10
         self.average_money = money_temp / self.current_agents
         self.median_money = statistics.median(
             [x.money for x in self.schedule.agents])
@@ -169,12 +172,21 @@ class EcoModel(Model):
         self.price_history.append(average_price)
 
     def update_price_assumptions(self):
-
+        avg_price_assumption_bottom = []
+        avg_price_assumption_top = []
         for agent in self.schedule.agents:
             agent_orders = [
                 order for order in self.orders if order.initator == agent]
 
             agent.update_price_assumption(agent_orders, self.price_history[-1])
+            avg_price_assumption_bottom.append(agent.price_assumption_bottom)
+            avg_price_assumption_top.append(agent.price_assumption_top)
+
+        self.avg_price_assumption_bottom = statistics.mean(
+            avg_price_assumption_bottom)*10
+        self.avg_price_assumption_top = statistics.mean(
+            avg_price_assumption_top)*10
+
         # exit()
 
     def step(self):
@@ -183,10 +195,11 @@ class EcoModel(Model):
         self.resolve_orders()
 
         for x in self.kill_agents:
-            if (random.random() < 0.5):
+            if (random.random() < 0.2):
+
                 print("Agent died", x.unique_id)
-                self.grid.remove_agent(x)
-                self.schedule.remove(x)
+                # self.grid.remove_agent(x)
+                # self.schedule.remove(x)
         self.kill_agents.clear()
         self.current_agents = self.schedule.get_agent_count()
         self.update_trade_history()
