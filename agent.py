@@ -126,21 +126,21 @@ class EcoAgent(Agent):
 
             if ppu > self.price_assumption_top:
                 print(
-                    f"Ripoff! i paid {ppu} but i thought it was {self.price_assumption_top}")
+                    f"[{order.type}]Ripoff! i paid too much {ppu} but i thought it was {self.price_assumption_top}")
                 self.price_assumption_top = (
                     self.price_assumption_top * (1+change))
                 continue
 
             if ppu < self.price_assumption_bottom:
                 print(
-                    f"cheap! i paid {ppu} but i thought it was {self.price_assumption_top}")
+                    f"[{order.type}]cheap! i paid {ppu} but i thought it was {self.price_assumption_top}")
                 self.price_assumption_bottom = (
                     self.price_assumption_bottom * (1-change))
                 continue
 
             if self.price_assumption_bottom <= ppu <= self.price_assumption_top:
                 print(
-                    f"we are in the sweet spot, i paid {ppu}, right in the middle of {self.price_assumption_bottom} and {self.price_assumption_top}")
+                    f"[{order.type}]we are in the sweet spot, i paid {ppu}, right in the middle of {self.price_assumption_bottom} and {self.price_assumption_top}")
                 # narrow the range
                 self.price_assumption_top = (
                     self.price_assumption_top * (1-change))
