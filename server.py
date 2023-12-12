@@ -20,7 +20,7 @@ def agent_portrayal(agent):
 num_agents = 20
 
 # Set up the grid
-grid = CanvasGrid(agent_portrayal, 10, 10, 700, 700)
+grid = CanvasGrid(agent_portrayal, 10, 10, 1000, 1000)
 
 chart_element = ChartModule(
     [
