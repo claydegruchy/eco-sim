@@ -46,7 +46,6 @@ class EcoAgent(Agent):
 
     def trade(self):
 
-        # [todo: add this logic]
         '''
         Determine-Sale-Quantity(Commodity)
             1 mean←historical mean price of Commodity
@@ -60,10 +59,10 @@ class EcoAgent(Agent):
         favorability = percent(market_average, self.average_price_assumption())
         quantity = favorability * (self.food - self.desired_food)
         price = self.random_price_assumption()
-        print("market_average", market_average)
-        print("average_price_assumption", self.average_price_assumption())
-        print("favorability", favorability)
-        print("quantity", quantity)
+        # print("market_average", market_average)
+        # print("average_price_assumption", self.average_price_assumption())
+        # print("favorability", favorability)
+        # print("quantity", quantity)
         if price > self.money:
             price = self.average_price_assumption()
             if price > self.money:
@@ -83,32 +82,6 @@ class EcoAgent(Agent):
                 price,
                 abs(quantity)
             )
-        return
-
-        # Attempt to place a trade in the local market
-
-        if self.food > self.desired_food:
-            # attempt to sell
-            quantity = round(self.food - self.desired_food, 3)
-            # quantity = self.food - self.desired_food
-            if quantity > 0:
-                self.model.register_sell_order(
-                    self,
-                    self.average_price_assumption(),
-                    quantity
-                )
-        elif self.food < self.desired_food:
-            # attempt to buy
-            if self.money < 0:
-                return
-            quantity = round(self.desired_food - self.food, 3)
-            # quantity = self.desired_food - self.food
-            if quantity > 0:
-                self.model.register_buy_order(
-                    self,
-                    self.average_price_assumption(),
-                    quantity
-                )
 
     def consume_resources(self):
         # Agent resource consumption logic
@@ -164,56 +137,3 @@ class EcoAgent(Agent):
                 else:
                     self.price_assumption_bottom *= 1.05
                 continue
-        # print("Changed assumptions", capture_current_assumptions,
-        #       (self.price_assumption_top, self.price_assumption_bottom))
-
-        # if fulfilled > 0:
-        #     if order.ppu > self.price_assumption_top:
-        #         self.price_assumption *= 1.05
-        #     if order.ppu < self.price_assumption_bottom:
-        #         self.price_assumption *= 0.95
-        # else:
-        #     if order.ppu > self.price_assumption_top:
-        #         self.price_assumption *= 0.95
-        #     if order.ppu < self.price_assumption_bottom:
-        #         self.price_assumption *= 1.05
-
-        # # Update price assumption based on recent trades
-        # # do this in 5% increments of the average price based on if the previous trade was successful or not
-
-        # # if we were very unsuccessful, change the assumption by a larger amount
-        # sale_percent = percent(remaining_quantity, inital_quantity)
-
-        # print("sale_percent", sale_percent)
-
-        # #  this speeds up the assumption change if the agent is very far from their desired price
-        # assumption_change = (self.price_assumption *
-        #                      (0.05+(sale_percent*0.15)))
-
-        # # if theres a big difference between desired food and actual food, change the assumption faster by some proportion
-        # # assumption_change *= abs_assumption_change / 10
-
-        # def lower_assumption():
-        #     print(self.agent_name(), "lowering assumption by", assumption_change)
-        #     self.price_assumption -= assumption_change
-        #     if self.price_assumption < 0.001:
-        #         self.price_assumption = 0.001
-
-        # def raise_assumption():
-        #     print(self.agent_name(), "raising assumption by", assumption_change)
-        #     self.price_assumption += assumption_change
-
-        # def pick_type():
-        #     if type == "buy":
-        #         return raise_assumption
-        #     elif type == "sell":
-        #         return lower_assumption
-
-        # if successful:
-        #     if ppu > self.price_assumption:
-        #         pick_type()()
-        #     elif ppu < self.price_assumption:
-        #         pick_type()()
-        # else:
-        #     pick_type()()
-        return
