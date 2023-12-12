@@ -45,7 +45,6 @@ class EcoAgent(Agent):
         return f"Agent {self.unique_id}"
 
     def trade(self):
-
         '''
         Determine-Sale-Quantity(Commodity)
             1 mean←historical mean price of Commodity
@@ -58,6 +57,9 @@ class EcoAgent(Agent):
         market_average = self.latest_market_price
         favorability = percent(market_average, self.average_price_assumption())
         quantity = favorability * (self.food - self.desired_food)
+        quantity = round(quantity, 1)
+        if quantity > -1 and quantity < 1:
+            quantity = 0
         price = self.random_price_assumption()
         # print("market_average", market_average)
         # print("average_price_assumption", self.average_price_assumption())
@@ -98,18 +100,12 @@ class EcoAgent(Agent):
 
     def update_price_assumption(self, orders, today_price):
 
-        print("update_price_assumption", len(orders))
         self.latest_market_price = today_price
-        capture_current_assumptions = (
-            self.price_assumption_top, self.price_assumption_bottom)
 
         for order in orders:
             inital_quantity = order.inital_quantity
             fulfilled = order.fulfilled
             ppu = order.ppu
-
-            # was this order successful?
-            successful = fulfilled > 0
 
             # if we sold none
             if fulfilled == 0:
@@ -132,6 +128,9 @@ class EcoAgent(Agent):
 
             # if we sold some
             if fulfilled > 0:
+                # we want to hinge the price on 50% of the order
+                # so if we sold less than 50% of the order, lower slightly, if we sold more than 50% of the order, raise slightly
+
                 if self.latest_market_price < self.average_price_assumption():
                     self.price_assumption_top *= 0.95
                 else:
