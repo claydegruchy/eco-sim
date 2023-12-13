@@ -1,7 +1,19 @@
 from mesa.visualization.modules import CanvasGrid, ChartModule
 from mesa.visualization.ModularVisualization import ModularServer
 from model import EcoModel
-# from agent import EcoAgent
+
+import hashlib
+
+
+def colour_gen(word):
+    # Use hashlib to create a hash value from the word using MD5
+    hash_object = hashlib.md5(word.encode('utf-8'))
+    hash_hex = hash_object.hexdigest()
+
+    # Take the first 6 characters of the hash as the color code
+    color_code = '#' + hash_hex[:6]
+
+    return color_code
 
 
 def agent_portrayal(agent):
@@ -12,7 +24,7 @@ def agent_portrayal(agent):
         "Layer": 0,
         "r": 0.5,
         "text_color": "black",
-        "text": f'''{round(agent.food,1)}={round(agent.money,1)}={round(agent.production,1)}''',
+        "text": f'''{round(agent.resources['food'],1)}={round(agent.money,1)}={round(agent.production,1)}''',
     }
     return portrayal
 
@@ -24,20 +36,18 @@ grid = CanvasGrid(agent_portrayal, 10, 10, 860, 200)
 
 chart_element = ChartModule(
     [
-        {"Label": "Total Money", "Color": "#AA0000"},
-        {"Label": "Agents", "Color": "#AA00AA"},
-        {"Label": "Average Money", "Color": "#AAAAAA"},
-        {"Label": "Median Money", "Color": "#00AA00"},
-        # Total Trades
-        {"Label": "Total Trades", "Color": "#00A0AA"},
-        # Day Trades
-        {"Label": "Day Trades", "Color": "#00000A"},
-        # Average Price Assumption
-        {"Label": "Average Price Assumption", "Color": "#0A0000"},
-        # avg_price_assumption_bottom
-        {"Label": "avg_price_assumption_bottom", "Color": "#0B0000"},
-        # avg_price_assumption_top
-        {"Label": "avg_price_assumption_top", "Color": "#B00000"},
+        {"Label": "Total Money", "Color": colour_gen("Total Money")},
+        {"Label": "Agents", "Color": colour_gen("Agents")},
+        {"Label": "Average Money", "Color": colour_gen("Average Money")},
+        {"Label": "Median Money", "Color": colour_gen("Median Money")},
+        {"Label": "Total Trades", "Color": colour_gen("Total Trades")},
+        {"Label": "Day Trades", "Color": colour_gen("Day Trades")},
+        {"Label": "Average Price Assumption",
+            "Color": colour_gen("Average Price Assumption")},
+        {"Label": "avg_price_assumption_bottom",
+            "Color": colour_gen("avg_price_assumption_bottom")},
+        {"Label": "avg_price_assumption_top",
+            "Color": colour_gen("avg_price_assumption_top")},
 
 
 
@@ -48,7 +58,7 @@ chart_element = ChartModule(
 # Create and launch the server
 server = ModularServer(
     EcoModel,
-    [grid, chart_element],
+    [grid, chart_element, ],
     "Eco Simulation",
     {"width": 5, "height": 4, "num_agents": num_agents, }
 )
