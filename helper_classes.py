@@ -144,3 +144,11 @@ smith = Role("Smith", [craft_tools], {"tools": 0})
 
 
 roles = [farmer, lumberjack, smith]
+
+
+def resource_finder():
+    potential_resources = set()
+    for role in roles:
+        creates = role.get_created_resources()
+        potential_resources.update(creates.keys())
+    return potential_resources

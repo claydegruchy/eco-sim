@@ -1,8 +1,8 @@
 from mesa.visualization.modules import CanvasGrid, ChartModule
 from mesa.visualization.ModularVisualization import ModularServer
 from model import EcoModel
-
 import hashlib
+from helper_classes import resource_finder
 
 
 def colour_gen(word):
@@ -34,25 +34,28 @@ num_agents = 20
 # Set up the grid
 grid = CanvasGrid(agent_portrayal, 10, 10, 860, 200)
 
+
+chart_data = [
+    {"Label": "Total Money", "Color": colour_gen("Total Money")},
+    {"Label": "Agents", "Color": colour_gen("Agents")},
+    {"Label": "Average Money", "Color": colour_gen("Average Money")},
+    {"Label": "Median Money", "Color": colour_gen("Median Money")},
+    {"Label": "Total Trades", "Color": colour_gen("Total Trades")},
+    {"Label": "Day Trades", "Color": colour_gen("Day Trades")},
+    {"Label": "Average Price Assumption",
+     "Color": colour_gen("Average Price Assumption")},
+    {"Label": "avg_price_assumption_bottom",
+     "Color": colour_gen("avg_price_assumption_bottom")},
+    {"Label": "avg_price_assumption_top",
+     "Color": colour_gen("avg_price_assumption_top")},
+]
+
+for resource in resource_finder():
+    chart_data.append({"Label": resource+"_price",
+                      "Color": colour_gen(resource)})
+
 chart_element = ChartModule(
-    [
-        {"Label": "Total Money", "Color": colour_gen("Total Money")},
-        {"Label": "Agents", "Color": colour_gen("Agents")},
-        {"Label": "Average Money", "Color": colour_gen("Average Money")},
-        {"Label": "Median Money", "Color": colour_gen("Median Money")},
-        {"Label": "Total Trades", "Color": colour_gen("Total Trades")},
-        {"Label": "Day Trades", "Color": colour_gen("Day Trades")},
-        {"Label": "Average Price Assumption",
-            "Color": colour_gen("Average Price Assumption")},
-        {"Label": "avg_price_assumption_bottom",
-            "Color": colour_gen("avg_price_assumption_bottom")},
-        {"Label": "avg_price_assumption_top",
-            "Color": colour_gen("avg_price_assumption_top")},
-
-
-
-
-    ]
+    chart_data
 )
 
 # Create and launch the server

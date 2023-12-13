@@ -5,7 +5,7 @@ from mesa.datacollection import DataCollector
 import random
 import statistics
 from agent import EcoAgent
-from helper_classes import Order, Trade, farmer, roles
+from helper_classes import Order, Trade, farmer, roles, resource_finder
 
 
 # BO = Order('buy', "man1", 1, 1)
@@ -31,10 +31,7 @@ class EcoModel(Model):
         self.num_agents = num_agents
 
         print("Setting up resources")
-        potential_resources = set()
-        for role in roles:
-            creates = role.get_created_resources()
-            potential_resources.update(creates.keys())
+        potential_resources = resource_finder()
 
         # trade variables
         self.trades = []
@@ -76,11 +73,11 @@ class EcoModel(Model):
                            "Median Money": "median_money",
                            "Total Trades": "total_trades",
                            "Day Trades": "day_trades",
-                           #    "Average Price Assumption": "average_price_assumption",
-                           #    "avg_price_assumption_bottom": "avg_price_assumption_bottom",
-                           #    "avg_price_assumption_top": "avg_price_assumption_top",
-
                            }
+    # list of resources rpices
+        for resource in potential_resources:
+            model_reporters[resource] = lambda m, resource=resource: m.price_history[resource][-1]
+        print(self.price_history[resource][-1])
 
         self.datacollector = DataCollector(
             agent_reporters={"Food": "food",
