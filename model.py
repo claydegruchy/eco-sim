@@ -39,7 +39,7 @@ class EcoModel(Model):
         # self.sell_orders = []
         self.orders = []
         self.price_history = dict(
-            zip(potential_resources, [[0] for x in range(len(potential_resources))]))
+            zip(potential_resources, [[5] for x in range(len(potential_resources))]))
 
         # report variables
         self.total_trades = 0
@@ -55,8 +55,11 @@ class EcoModel(Model):
 
         # Create agents
         for i in range(self.num_agents):
+            normalised = i / self.num_agents+0.5
             # Use next_id() to generate unique agent id
             agent = EcoAgent(self.next_id(), self, farmer)
+            agent.production = normalised
+
             x = random.randrange(self.grid.width)
             y = random.randrange(self.grid.height)
             while self.grid.is_cell_empty((x, y)) == False:
@@ -76,8 +79,10 @@ class EcoModel(Model):
                            }
     # list of resources rpices
         for resource in potential_resources:
-            model_reporters[resource] = lambda m, resource=resource: m.price_history[resource][-1]
-        print(self.price_history[resource][-1])
+            model_reporters[resource +
+                            "_price"] = lambda m, resource=resource: m.price_history[resource][-1]*10
+            model_reporters[resource +
+                            "_avg_assummed"] = lambda m, resource=resource: [a.average_price_assumption(resource) for a in m.schedule.agents]
 
         self.datacollector = DataCollector(
             agent_reporters={"Food": "food",

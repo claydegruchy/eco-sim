@@ -1,7 +1,7 @@
 from mesa import Agent
 import random
 import numpy as np
-from helper_classes import Recipe, Role, farmer, roles
+from helper_classes import Recipe, Role, farmer, roles, resource_finder
 
 
 def percent(part, whole):
@@ -38,10 +38,17 @@ class EcoAgent(Agent):
                 "bottom": 4,
             },
         }
+        print("Setting up price assumptions")
+        for resource in resource_finder():
+            if resource in self.price_assumptions:
+                continue
+            self.price_assumptions[resource] = {}
+            self.price_assumptions[resource]['top'] = random.uniform(
+                6, 10)
+            self.price_assumptions[resource]['bottom'] = random.uniform(
+                1, 5)
 
-        self.latest_market_prices = {
-        }
-
+        print("Setting up agent")
         self.update_role(role)
         self.money = 100  # Starting money
         self.production = random.uniform(0, 2)  # Starting production
@@ -106,10 +113,8 @@ class EcoAgent(Agent):
             3 amount to sell ←favorability * excess resources of Commodity
             4 return amount to sell
         '''
-        if (resource not in self.latest_market_prices):
-            self.latest_market_prices[resource] = 5
 
-        market_average = self.latest_market_prices[resource]
+        market_average = self.model.price_history[resource][-1]
         favorability = percent(
             market_average, self.average_price_assumption(resource))
         quantity = favorability * \
@@ -119,15 +124,18 @@ class EcoAgent(Agent):
             quantity = 0
         price = self.random_price_assumption(resource)
         # print("market_average", market_average)
-        # print("average_price_assumption", self.average_price_assumption())
+        # print("average_price_assumption", price)
         # print("favorability", favorability)
         # print("quantity", quantity)
-        if price > self.money:
-            price = self.average_price_assumption(resource)
-            if price > self.money:
-                price = self.money
+
+        if price < 0.0000001:
+            price = 0.0000001
 
         if quantity < 0:
+            if price > self.money:
+                price = self.average_price_assumption(resource)
+                if price > self.money:
+                    price = self.money
             # we want to buy from the market
             self.model.register_buy_order(
                 resource,
@@ -156,29 +164,28 @@ class EcoAgent(Agent):
         bottom = self.price_assumptions[resource]['bottom']
 
         change = 0.05
-
         ppu = order.ppu
 
         if ppu > top:
             # print(
-                # f"[{order.type}]Ripoff! i paid too much {ppu} but i thought it was {top}")
+            # f"[{order.type}]Ripoff! i paid too much {ppu} but i thought it was {top}")
             top = (top * (1+change))
 
         elif ppu < bottom:
             # print(
-                # f"[{order.type}]cheap! i paid {ppu} but i thought it was {top}")
+            # f"[{order.type}]cheap! i paid {ppu} but i thought it was {top}")
             bottom = (bottom * (1-change))
 
         elif bottom <= ppu <= top:
             # print(
-                # f"[{order.type}]we are in the sweet spot, i paid {ppu}, right in the middle of {bottom} and {top}")
+            # f"[{order.type}]we are in the sweet spot, i paid {ppu}, right in the middle of {bottom} and {top}")
             # narrow the range
             top = (top * (1-change))
             bottom = (bottom * (1+change))
         else:
             print("something went wrong")
-        self.price_assumptions[resource]['top'] = top
-        self.price_assumptions[resource]['bottom'] = bottom
+        self.price_assumptions[resource]['top'] = max(top, 0)
+        self.price_assumptions[resource]['bottom'] = max(bottom, 0)
 
     def starve(self):
         print("Agent starving", self.unique_id)

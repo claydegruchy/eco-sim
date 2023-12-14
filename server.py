@@ -16,14 +16,41 @@ def colour_gen(word):
     return color_code
 
 
+def clamp(n, minn, maxn): return max(min(maxn, n), minn)
+
+
+# For Rectangles:
+# "w", "h": The width and height of the rectangle, which are in
+#             fractions of cell width and height.
+# "xAlign", "yAlign": Alignment of the rectangle within the
+#                     cell. Defaults to 0.5 (center).
+
 def agent_portrayal(agent):
+    m = clamp(int(agent.money), 0, 255)
+
+    # agents who have a lot of money are green
+    # this operates on a sliding scale to red where they are broke
+
     portrayal = {
-        "Shape": "circle",
-        "Filled": "true",
-        "Color": "pink",
+        # "Shape": "circle",
+        # "r": 0.5,
+
+        "Shape": "rect",
+        "w": 1,
+        "h": 1,
+        # "xAlign": 10,
+        # "yAlign": 10,
+
+
+        "Filled": "false",
+        # "Color": f"red",
+        "Color": f"rgba({m},{m}, 0, 0.5)",
         "Layer": 0,
-        "r": 0.5,
+        # "text_color": "rgb(255, 255, 0)",
         "text_color": "black",
+
+
+
         "text": f'''{round(agent.resources['food'],1)}={round(agent.money,1)}={round(agent.production,1)}''',
     }
     return portrayal
@@ -32,27 +59,26 @@ def agent_portrayal(agent):
 num_agents = 20
 
 # Set up the grid
-grid = CanvasGrid(agent_portrayal, 10, 10, 860, 200)
+grid = CanvasGrid(agent_portrayal, 10, 10, 800, 500)
 
 
 chart_data = [
-    {"Label": "Total Money", "Color": colour_gen("Total Money")},
+    # {"Label": "Total Money", "Color": colour_gen("Total Money")},
     {"Label": "Agents", "Color": colour_gen("Agents")},
-    {"Label": "Average Money", "Color": colour_gen("Average Money")},
-    {"Label": "Median Money", "Color": colour_gen("Median Money")},
+    # {"Label": "Average Money", "Color": colour_gen("Average Money")},
+    # {"Label": "Median Money", "Color": colour_gen("Median Money")},
     {"Label": "Total Trades", "Color": colour_gen("Total Trades")},
     {"Label": "Day Trades", "Color": colour_gen("Day Trades")},
-    {"Label": "Average Price Assumption",
-     "Color": colour_gen("Average Price Assumption")},
-    {"Label": "avg_price_assumption_bottom",
-     "Color": colour_gen("avg_price_assumption_bottom")},
-    {"Label": "avg_price_assumption_top",
-     "Color": colour_gen("avg_price_assumption_top")},
 ]
 
 for resource in resource_finder():
+    if resource != "food":
+        continue
     chart_data.append({"Label": resource+"_price",
-                      "Color": colour_gen(resource)})
+                      "Color": colour_gen(resource+"_price")})
+
+    chart_data.append({"Label": resource+"_avg_assummed",
+                      "Color": colour_gen(resource+"_avg_assummed")})
 
 chart_element = ChartModule(
     chart_data
