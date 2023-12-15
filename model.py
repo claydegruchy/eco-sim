@@ -6,6 +6,7 @@ import random
 import statistics
 from agent import EcoAgent
 from helper_classes import Order, Trade, farmer, roles, resource_finder
+from numpy import mean,median
 
 
 # BO = Order('buy', "man1", 1, 1)
@@ -49,9 +50,6 @@ class EcoModel(Model):
         self.average_money = 0
         self.median_money = 0
         self.current_agents = num_agents
-        # self.average_price_assumption = 5
-        self.avg_price_assumption_bottom = 0
-        self.avg_price_assumption_top = 0
 
         # Create agents
         for i in range(self.num_agents):
@@ -80,9 +78,11 @@ class EcoModel(Model):
     # list of resources rpices
         for resource in potential_resources:
             model_reporters[resource +
-                            "_price"] = lambda m, resource=resource: m.price_history[resource][-1]*10
+                            "_price"] = lambda m, resource=resource: m.price_history[resource][-1]
             model_reporters[resource +
-                            "_avg_assummed"] = lambda m, resource=resource: [a.average_price_assumption(resource) for a in m.schedule.agents]
+                            "_avg_assummed"] = lambda m, resource=resource: mean([a.average_price_assumption(resource) for a in m.schedule.agents])
+            model_reporters[resource +
+                            "_median_assummed"] = lambda m, resource=resource: median([a.average_price_assumption(resource) for a in m.schedule.agents])
 
         self.datacollector = DataCollector(
             agent_reporters={"Food": "food",
@@ -94,10 +94,6 @@ class EcoModel(Model):
             model_reporters=model_reporters,
         )
         print("Model setup complete, starting...")
-
-    def test(a):
-        print(a, type(a))
-        return 1
 
     def register_buy_order(self, resource, agent, ppu, quantity):
         bo = Order(resource, 'buy', agent, quantity, ppu)
@@ -177,7 +173,6 @@ class EcoModel(Model):
 
     def generate_stats(self):
         money_temp = 0
-        ass_temp = 0
         for x in self.schedule.agents:
             money_temp += x.money
         self.average_money = money_temp / self.current_agents
@@ -198,6 +193,14 @@ class EcoModel(Model):
     def update_price_assumptions(self):
         for order in self.orders:
             order.initator.update_price_assumption(order)
+
+    def find_role(self, agent):
+        # potential_roles = [role.get_profitability(agent) for role in roles ]
+        # profitability = [role.get_profitability(agent) for role in roles ]
+        # for role in roles:
+        # role.get_profitability(agent)
+        # pick random from roles
+        return random.choice(roles)
 
     def step(self):
         self.schedule.step()

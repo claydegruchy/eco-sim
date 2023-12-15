@@ -1,7 +1,7 @@
 from mesa import Agent
 import random
 import numpy as np
-from helper_classes import Recipe, Role, farmer, roles, resource_finder
+from helper_classes import Role, Order, resource_finder
 
 
 def percent(part, whole):
@@ -21,6 +21,7 @@ def percent(part, whole):
 
 # print(scale_range([0,5,10], 0, 1))
 # exit()
+min_price = 0.0000001
 
 
 class EcoAgent(Agent):
@@ -38,7 +39,7 @@ class EcoAgent(Agent):
                 "bottom": 4,
             },
         }
-        print("Setting up price assumptions")
+        # print("Setting up price assumptions")
         for resource in resource_finder():
             if resource in self.price_assumptions:
                 continue
@@ -128,19 +129,19 @@ class EcoAgent(Agent):
         # print("favorability", favorability)
         # print("quantity", quantity)
 
-        if price < 0.0000001:
-            price = 0.0000001
-
         if quantity < 0:
+            if self.money < 0:
+                return
             if price > self.money:
                 price = self.average_price_assumption(resource)
                 if price > self.money:
                     price = self.money
+
             # we want to buy from the market
             self.model.register_buy_order(
                 resource,
                 self,
-                price,
+                max(price, min_price),
                 abs(quantity)
             )
         if quantity > 0:
@@ -148,11 +149,11 @@ class EcoAgent(Agent):
             self.model.register_sell_order(
                 resource,
                 self,
-                price,
+                max(price, min_price),
                 abs(quantity)
             )
 
-    def update_price_assumption(self, order):
+    def update_price_assumption(self, order: Order):
         # dont base the assumptions directly on the market price
         # this is factored when choosing the sell price in the trade function
         # this should only use the orders that have been fulfilled
@@ -163,29 +164,48 @@ class EcoAgent(Agent):
         top = self.price_assumptions[resource]['top']
         bottom = self.price_assumptions[resource]['bottom']
 
-        change = 0.05
+        ht = top
+        hb = bottom
+
+        change = 0.1
         ppu = order.ppu
 
+        # this is somehow creating a runaway effect where the price assumptions are rising constantly
+        # becuase the success of the order is not being used to factor the price assumption
+        failure_degree = round(order.fulfilled / order.inital_quantity, 2)
+
+        # people are raising their prices in response to not selling, which is counter logic
+        
+
         if ppu > top:
-            # print(
-            # f"[{order.type}]Ripoff! i paid too much {ppu} but i thought it was {top}")
             top = (top * (1+change))
-
         elif ppu < bottom:
-            # print(
-            # f"[{order.type}]cheap! i paid {ppu} but i thought it was {top}")
             bottom = (bottom * (1-change))
-
         elif bottom <= ppu <= top:
-            # print(
-            # f"[{order.type}]we are in the sweet spot, i paid {ppu}, right in the middle of {bottom} and {top}")
             # narrow the range
             top = (top * (1-change))
             bottom = (bottom * (1+change))
-        else:
-            print("something went wrong")
+            # print("something went wrong")
+
         self.price_assumptions[resource]['top'] = max(top, 0)
         self.price_assumptions[resource]['bottom'] = max(bottom, 0)
+
+        ht = round(ht, 2)
+        top = round(top, 2)
+        hb = round(hb, 2)
+        bottom = round(bottom, 2)
+        t_percent = round((top-ht)/ht*100, 2)
+        b_percent = round((bottom-hb)/hb*100, 2)
+
+        print("PA:", self.unique_id, order.type, resource, f"T:{ht}=>{top}({t_percent}%)",
+              f"B:{hb}=>{bottom}({b_percent}%), based on {failure_degree}")
+
+    def change_role(self):
+        # find a suitable role
+        new_role = self.model.find_role(self)
+        # check if the agent has the resources to change roles
+        self.update_role(new_role)
+        self.clear_orders()
 
     def starve(self):
         print("Agent starving", self.unique_id)

@@ -36,7 +36,7 @@ class Order(_Base_Order):
         print("Order created", self)
 
     def __str__(self):
-        return f"ID:{self.id} O:{self.type} V:{type(self).__name__} QTY:{self.fulfilled}/{self.inital_quantity}({round(self.fulfilled/self.inital_quantity*100,2)}) PPU:{round(self.ppu,2)} "
+        return f"ID:{self.id} A:{self.initator.unique_id} O:{self.type} V:{type(self).__name__} QTY:{self.fulfilled}/{self.inital_quantity}({round(self.fulfilled/self.inital_quantity*100,2)}) PPU:{round(self.ppu,2)} "
 
     def fulfill(self, quantity):
         self.fulfilled += quantity
@@ -61,6 +61,7 @@ class Trade(_Base_Order):
                              sell_order.id + "=>" + buy_order.id)
         self.sell_order = sell_order
         self.buy_order = buy_order
+        print("Trade created", self)
 
 
 class Recipe:
@@ -94,9 +95,9 @@ class Recipe:
     def get_profitability(self, agent):
         profitability = 0
         for resource, quantity in self.produces.items():
-            profitability += agent.market_prices[resource] * quantity
+            profitability += agent.price_assumptions[resource] * quantity
         for resource, quantity in self.requires.items():
-            profitability -= agent.market_prices[resource] * quantity
+            profitability -= agent.price_assumptions[resource] * quantity
         return profitability
 
 
@@ -137,8 +138,9 @@ farm_strong = Recipe("Strong Farm", {"tools": 0.5}, {"food": 3, "tools": 0.4})
 farm_weak = Recipe("Weak Farm", {}, {"food": 1})
 
 
-lumberjack = Role("Lumberjack", [chop_wood_strong, chop_wood_weak], {
-                  "wood": 0, "tools": 2})
+lumberjack = Role("Lumberjack",
+                  [chop_wood_strong, chop_wood_weak],
+                  {"wood": 0, "tools": 2})
 farmer = Role("Farmer", [farm_strong, farm_weak], {"food": 30, "tools": 2})
 smith = Role("Smith", [craft_tools], {"tools": 0})
 
