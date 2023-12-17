@@ -41,6 +41,8 @@ class EcoAgent(Agent):
         }
         # print("Setting up price assumptions")
         for resource in resource_finder():
+            if resource not in self.resources:
+                self.resources[resource] = 0
             if resource in self.price_assumptions:
                 continue
             self.price_assumptions[resource] = {}
@@ -53,7 +55,8 @@ class EcoAgent(Agent):
         self.update_role(role)
         self.money = 100  # Starting money
         self.production = random.uniform(0, 2)  # Starting production
-        # self.production = random.gauss(1, 0.1)  # Starting production
+        self.last_production = 0
+        self.last_trade = 0
 
         self.orders = []
 
@@ -80,8 +83,14 @@ class EcoAgent(Agent):
     def agent_name(self):
         return f"Agent {self.unique_id}"
 
+    def get_stat(self, attr):
+
+        return getattr(self, attr)
+
     # resouce handlers
     def get_resource(self, resource):
+        if resource not in self.resources:
+            return 0
         return self.resources[resource]
 
     def add_resource(self, resource, quantity):
@@ -100,7 +109,7 @@ class EcoAgent(Agent):
             self.starve()
 
     def produce_resources(self):
-        self.role.make_recipe(self)
+        self.last_production = self.role.make_recipe(self)
 
     def update_reports(self):
         row = {"agent_id": self.unique_id, "food": self.resources['food']}
@@ -215,26 +224,25 @@ class EcoAgent(Agent):
             t_percent = round((top-ht)/ht*100, 2)
             b_percent = round((bottom-hb)/hb*100, 2)
         else:
-            t_percent = "err"
-            b_percent = "err"
+            t_percent = 0
+            b_percent = 0
 
         print("PA:", self.unique_id, order.type, resource, f"T:{ht}=>{top}({t_percent}%)",
               f"B:{hb}=>{bottom}({b_percent}%), based on {failure_degree}")
 
     def change_role(self):
-        # find a suitable role
         new_role = self.model.find_role(self)
-        # check if the agent has the resources to change roles
+        print("Agent changing role", self.unique_id, "to", new_role.name)
         self.update_role(new_role)
         self.clear_orders()
 
     def starve(self):
         print("Agent starving", self.unique_id)
         if (random.random() < 0.2):
+            return self.change_role()
+        if (random.random() < 0.2):
             self.die()
 
     def die(self):
+        self.model.kill_agent(self)
         # this is called when the agent is starving
-        self.model.schedule.remove(self)
-        self.model.grid.remove_agent(self)
-        print("Agent died", self.unique_id)

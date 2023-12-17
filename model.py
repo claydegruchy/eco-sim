@@ -207,6 +207,11 @@ class EcoModel(Model):
         # pick random from roles
         return random.choice(roles)
 
+    def kill_agent(self, agent):
+        print("Agent died", agent.unique_id)
+        self.schedule.remove(agent)
+        self.grid.remove_agent(agent)
+
     def step(self):
         self.schedule.step()
 

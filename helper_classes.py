@@ -82,14 +82,19 @@ class Recipe:
         # print("Making recipe", self.name)
         # old_inventory = agent.resources.copy()
         if not self.can_make(agent):
-            return
+            return 0
 
         for resource, quantity in self.requires.items():
             agent.remove_resource(resource, (quantity))
         for resource, quantity in self.produces.items():
             # using gaussian distribution to simulate randomness and highlight changes
-            agent.add_resource(resource, random.gauss(
-                quantity, agent.production))
+            # this can go into negatives!
+            
+            # here is a gaussian distribution where lower numbers produce smaller outputs
+            # quantity = quantity * random.gauss(agent.production, 0.1)
+            
+            agent.add_resource(resource, quantity*agent.production)
+            return quantity
         # print("Inventory:", old_inventory, "->", agent.resources)
 
     def get_profitability(self, agent):

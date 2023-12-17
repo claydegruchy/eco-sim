@@ -1,26 +1,35 @@
 from mesa.visualization.modules import CanvasGrid, ChartModule, TextElement
 from mesa.visualization.ModularVisualization import ModularServer
+from html_tools import table_style
+
+import pandas as pd
+
 
 from model import EcoModel
 import hashlib
 from helper_classes import resource_finder
 
 
-class AttributeElement(TextElement):
-    def __init__(self, attr_name):
-        '''
-        Create a new text attribute element.
-
-        Args:
-            attr_name: The name of the attribute to extract from the model.
-
-        Example return: "happy: 10"
-        '''
-        self.attr_name = attr_name
+class TableElement(TextElement):
+    def __init__(self, lambda_data):
+        self.lambda_data = lambda_data
 
     def render(self, model):
-        val = getattr(model, self.attr_name)
-        return self.attr_name + ": " + str(val)
+        # val = getattr(model, self.attr_name)
+        # return self.attr_name + ":<b> " + str(val)+"</b>"
+        # creating the dataframe
+        df = pd.DataFrame({"Name": ['Anurag', 'Manjeet', 'Shubham',
+                                    'Saurabh', 'Ujjawal'],
+
+                           "Address": ['Patna', 'Delhi', 'Coimbatore',
+                                       'Greater noida', 'Patna'],
+
+                           "ID": [20123, 20124, 20145, 20146, 20147],
+
+                           "Sell": [140000, 300000, 600000, 200000, 600000]})
+        # print(model.datacollector.get_table_dataframe("Final_Values"))
+
+        return table_style(self.lambda_data(model))
 
 
 def colour_gen(word):
@@ -113,13 +122,25 @@ chart_element = ChartModule(
     chart_data
 )
 
-happy_element = AttributeElement("total_trades")
+table_all_model_data = TableElement(
+    lambda m: m.datacollector.get_model_vars_dataframe())
+
+
+# generates the table of agent stats
+agent_stats = ['money', 'production', 'last_production', 'last_trade']
+agent_resources = list(resource_finder())
+table_agent_stats = TableElement(
+    lambda m: pd.DataFrame([[a.unique_id, a.role.name] +
+                            [a.get_stat(stat) for stat in agent_stats] +
+                            [a.get_resource(res) for res in agent_resources]
+                            for a in m.schedule.agents],
+                           columns=["id", "role",]+agent_stats+agent_resources), )
 
 
 # Create and launch the server
 server = ModularServer(
     EcoModel,
-    [grid, chart_element, happy_element,],
+    [grid, chart_element, table_agent_stats, table_all_model_data],
     "Eco Simulation",
     {"width": 5, "height": 4, "num_agents": num_agents, }
 )
