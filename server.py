@@ -1,8 +1,26 @@
-from mesa.visualization.modules import CanvasGrid, ChartModule
+from mesa.visualization.modules import CanvasGrid, ChartModule, TextElement
 from mesa.visualization.ModularVisualization import ModularServer
+
 from model import EcoModel
 import hashlib
 from helper_classes import resource_finder
+
+
+class AttributeElement(TextElement):
+    def __init__(self, attr_name):
+        '''
+        Create a new text attribute element.
+
+        Args:
+            attr_name: The name of the attribute to extract from the model.
+
+        Example return: "happy: 10"
+        '''
+        self.attr_name = attr_name
+
+    def render(self, model):
+        val = getattr(model, self.attr_name)
+        return self.attr_name + ": " + str(val)
 
 
 def colour_gen(word):
@@ -95,10 +113,13 @@ chart_element = ChartModule(
     chart_data
 )
 
+happy_element = AttributeElement("total_trades")
+
+
 # Create and launch the server
 server = ModularServer(
     EcoModel,
-    [grid, chart_element, ],
+    [grid, chart_element, happy_element,],
     "Eco Simulation",
     {"width": 5, "height": 4, "num_agents": num_agents, }
 )

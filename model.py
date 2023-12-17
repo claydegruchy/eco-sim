@@ -6,7 +6,7 @@ import random
 import statistics
 from agent import EcoAgent
 from helper_classes import Order, Trade, farmer, roles, resource_finder
-from numpy import mean,median
+from numpy import mean, median
 
 
 # BO = Order('buy', "man1", 1, 1)
@@ -92,6 +92,9 @@ class EcoModel(Model):
 
                              },
             model_reporters=model_reporters,
+            tables={
+                "Final_Values": ["agent_id", "food"]
+            }
         )
         print("Model setup complete, starting...")
 
@@ -106,6 +109,7 @@ class EcoModel(Model):
     def resolve_orders(self):
         print("Market opened")
         self.day_trades = 0
+        total_orders = len(self.orders)
 
         for resource in set([order.resource for order in self.orders]):
             print("Resolving orders for", resource)
@@ -144,7 +148,8 @@ class EcoModel(Model):
                 orders -= 1
 
         # print("Resources:", resources)
-        print("Market closed")
+        print("Market closed",
+              f"{self.day_trades} trades and {total_orders} orders")
         return
 
         self.buy_orders.clear()
@@ -165,7 +170,7 @@ class EcoModel(Model):
         trade.buy_order.fulfill(trade.quantity)
 
         self.total_trades += 1
-        self.day_trades += 10
+        self.day_trades += 1
 
     def next_id(self):
         self.current_id += 1

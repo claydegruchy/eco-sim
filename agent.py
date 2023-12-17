@@ -102,6 +102,10 @@ class EcoAgent(Agent):
     def produce_resources(self):
         self.role.make_recipe(self)
 
+    def update_reports(self):
+        row = {"agent_id": self.unique_id, "food": self.resources['food']}
+        self.model.datacollector.add_table_row("Final_Values", row)
+
     def trade(self):
         for resouce in self.desired_resources:
             self.trade_resource(resouce)
@@ -167,35 +171,52 @@ class EcoAgent(Agent):
         ht = top
         hb = bottom
 
-        change = 0.1
         ppu = order.ppu
 
         # this is somehow creating a runaway effect where the price assumptions are rising constantly
         # becuase the success of the order is not being used to factor the price assumption
-        failure_degree = round(order.fulfilled / order.inital_quantity, 2)
+        failure_degree = order.fulfilled / order.inital_quantity
 
-        # people are raising their prices in response to not selling, which is counter logic
-        
+        change = 0.05
 
-        if ppu > top:
-            top = (top * (1+change))
-        elif ppu < bottom:
+        # if i am attempting to sell, and i am not finding buyers, then i should lower my prices
+        if order.type == "sell" and failure_degree < 0.4:
             bottom = (bottom * (1-change))
-        elif bottom <= ppu <= top:
-            # narrow the range
+        # if i am attempting to sell, and i am finding buyers, then i should raise my prices
+        if order.type == "sell" and failure_degree > 0.6:
+            print(self.unique_id, "sale success case1", bottom, top)
+            top = (top * (1+change))
+            bottom = (bottom * (1+change))
+            print(self.unique_id, "sale success case2", bottom, top)
+        # if i am attempting to buy, but i am not finding sellers, then i should raise my prices
+        if order.type == "buy" and failure_degree < 0.4:
+            top = (top * (1+change))
+        # if i am attempting to buy, and i am easily finding sellers, then i should lower my prices
+        if order.type == "buy" and failure_degree > 0.6:
+            bottom = (bottom * (1-change))
+            top = (top * (1-change))
+
+        # if the order is being fulfilled at the desired rate, then the price assumption should contract
+        if .4 < failure_degree < .6:
             top = (top * (1-change))
             bottom = (bottom * (1+change))
-            # print("something went wrong")
 
-        self.price_assumptions[resource]['top'] = max(top, 0)
-        self.price_assumptions[resource]['bottom'] = max(bottom, 0)
+        self.price_assumptions[resource]['top'] = max(top, 0.0000001)
+        self.price_assumptions[resource]['bottom'] = max(bottom, 0.0000001)
 
         ht = round(ht, 2)
         top = round(top, 2)
         hb = round(hb, 2)
         bottom = round(bottom, 2)
-        t_percent = round((top-ht)/ht*100, 2)
-        b_percent = round((bottom-hb)/hb*100, 2)
+        failure_degree = round(order.fulfilled / order.inital_quantity, 2)
+
+        if 0 not in [ht, top, hb, bottom]:
+            # print(ht, top, hb, bottom)
+            t_percent = round((top-ht)/ht*100, 2)
+            b_percent = round((bottom-hb)/hb*100, 2)
+        else:
+            t_percent = "err"
+            b_percent = "err"
 
         print("PA:", self.unique_id, order.type, resource, f"T:{ht}=>{top}({t_percent}%)",
               f"B:{hb}=>{bottom}({b_percent}%), based on {failure_degree}")
