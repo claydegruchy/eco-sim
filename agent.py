@@ -59,12 +59,16 @@ class EcoAgent(Agent):
         self.last_trade = 0
 
         self.orders = []
+        self.last_order_count = 0
 
     def update_role(self, role):
         self.role = role
         self.desired_resources = role.desired_resources
+        print("Agent", self.unique_id, "role updated to",
+              role.name, self.desired_resources)
 
     def clear_orders(self):
+        self.last_order_count = len(self.orders)
         self.orders = []
 
     def average_price_assumption(self, resource):
@@ -79,6 +83,7 @@ class EcoAgent(Agent):
         self.consume_resources()
         self.produce_resources()
         self.trade()
+        self.clear_orders()
 
     def agent_name(self):
         return f"Agent {self.unique_id}"
@@ -151,20 +156,22 @@ class EcoAgent(Agent):
                     price = self.money
 
             # we want to buy from the market
-            self.model.register_buy_order(
+            order = self.model.register_buy_order(
                 resource,
                 self,
                 max(price, min_price),
                 abs(quantity)
             )
+            self.orders.append(order)
         if quantity > 0:
             # we want to sell to the market
-            self.model.register_sell_order(
+            order = self.model.register_sell_order(
                 resource,
                 self,
                 max(price, min_price),
                 abs(quantity)
             )
+            self.orders.append(order)
 
     def update_price_assumption(self, order: Order):
         # dont base the assumptions directly on the market price

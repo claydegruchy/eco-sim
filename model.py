@@ -50,22 +50,13 @@ class EcoModel(Model):
         self.average_money = 0
         self.median_money = 0
         self.current_agents = num_agents
+        self.dead_agents = []
 
         # Create agents
         for i in range(self.num_agents):
             normalised = i / self.num_agents+0.5
             # Use next_id() to generate unique agent id
-            agent = EcoAgent(self.next_id(), self, farmer)
-            agent.production = normalised
-
-            x = random.randrange(self.grid.width)
-            y = random.randrange(self.grid.height)
-            while self.grid.is_cell_empty((x, y)) == False:
-                x = random.randrange(self.grid.width)
-                y = random.randrange(self.grid.height)
-
-            self.grid.place_agent(agent, (x, y))
-            self.schedule.add(agent)
+            self.create_agent(random.choice(roles), normalised)
 
         model_reporters = {"Total Food": "total_food",
                            "Agents": lambda m: m.schedule.get_agent_count(),
@@ -74,6 +65,7 @@ class EcoModel(Model):
                            "Median Money": "median_money",
                            "Total Trades": "total_trades",
                            "Day Trades": "day_trades",
+                           "Dead Agents": lambda m: len(m.dead_agents),
                            }
     # list of resources rpices
         for resource in potential_resources:
@@ -98,13 +90,31 @@ class EcoModel(Model):
         )
         print("Model setup complete, starting...")
 
+    def create_agent(self, role, production=0):
+
+        agent = EcoAgent(self.next_id(), self, role)
+        agent.production = production
+        if production == 0:
+            agent.production = random.gauss(1, 0.2)
+        x = random.randrange(self.grid.width)
+        y = random.randrange(self.grid.height)
+        while self.grid.is_cell_empty((x, y)) == False:
+            x = random.randrange(self.grid.width)
+            y = random.randrange(self.grid.height)
+
+        self.grid.place_agent(agent, (x, y))
+        self.schedule.add(agent)
+        print("Agent created", agent.unique_id, agent.role.name)
+
     def register_buy_order(self, resource, agent, ppu, quantity):
         bo = Order(resource, 'buy', agent, quantity, ppu)
         self.orders.append(bo)
+        return bo
 
     def register_sell_order(self, resource, agent, ppu, quantity):
         so = Order(resource, 'sell', agent, quantity, ppu)
         self.orders.append(so)
+        return so
 
     def resolve_orders(self):
         print("Market opened")
@@ -211,6 +221,8 @@ class EcoModel(Model):
         print("Agent died", agent.unique_id)
         self.schedule.remove(agent)
         self.grid.remove_agent(agent)
+        self.dead_agents.append(agent)
+        self.create_agent(random.choice(roles))
 
     def step(self):
         self.schedule.step()

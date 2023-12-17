@@ -104,18 +104,19 @@ chart_data = [
     # {"Label": "Median Money", "Color": colour_str("Median Money")},
     # {"Label": "Total Trades", "Color": colour_str("Total Trades")},
     {"Label": "Day Trades", "Color": colour_str("Day Trades")},
+    {"Label": "Dead Agents", "Color": colour_str("Dead Agents")}
 ]
 
 for resource in resource_finder():
-    if resource != "food":
-        continue
+    # if resource != "food":
+    # continue
     chart_data.append({"Label": resource+"_price",
                       "Color": colour_str(resource+"_price")})
 
     chart_data.append({"Label": resource+"_avg_assummed",
                       "Color": colour_str(resource+"_avg_assummed")})
-    chart_data.append({"Label": resource+"_median_assummed",
-                      "Color": colour_str(resource+"_median_assummed")})
+    # chart_data.append({"Label": resource+"_median_assummed",
+    #                   "Color": colour_str(resource+"_median_assummed")})
 
 
 chart_element = ChartModule(
@@ -127,7 +128,8 @@ table_all_model_data = TableElement(
 
 
 # generates the table of agent stats
-agent_stats = ['money', 'production', 'last_production', 'last_trade']
+agent_stats = ['money', 'production',
+               'last_production', 'last_trade', 'last_order_count']
 agent_resources = list(resource_finder())
 table_agent_stats = TableElement(
     lambda m: pd.DataFrame([[a.unique_id, a.role.name] +
@@ -140,7 +142,9 @@ table_agent_stats = TableElement(
 # Create and launch the server
 server = ModularServer(
     EcoModel,
-    [grid, chart_element, table_agent_stats, table_all_model_data],
+    [grid, chart_element, table_agent_stats,
+     #  table_all_model_data
+     ],
     "Eco Simulation",
     {"width": 5, "height": 4, "num_agents": num_agents, }
 )

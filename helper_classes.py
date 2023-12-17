@@ -89,10 +89,10 @@ class Recipe:
         for resource, quantity in self.produces.items():
             # using gaussian distribution to simulate randomness and highlight changes
             # this can go into negatives!
-            
+
             # here is a gaussian distribution where lower numbers produce smaller outputs
             # quantity = quantity * random.gauss(agent.production, 0.1)
-            
+
             agent.add_resource(resource, quantity*agent.production)
             return quantity
         # print("Inventory:", old_inventory, "->", agent.resources)
@@ -110,7 +110,7 @@ class Role:
     def __init__(self, name, recipes: list[Recipe], desired_resources: dict):
         self.name = name
         self.recipes = recipes
-        self.desired_resources = {}
+        self.desired_resources = desired_resources
         if "food" not in self.desired_resources:
             self.desired_resources["food"] = 20
 
@@ -124,7 +124,7 @@ class Role:
         for recipe in self.recipes:
             if recipe.can_make(agent):
                 return recipe.make_recipe(agent)
-        print("No recipes can be made")
+        print("No recipes can be made", agent.unique_id, self.name)
 
     def get_created_resources(self):
         resources = {}
@@ -145,9 +145,9 @@ farm_weak = Recipe("Weak Farm", {}, {"food": 1})
 
 lumberjack = Role("Lumberjack",
                   [chop_wood_strong, chop_wood_weak],
-                  {"wood": 0, "tools": 2})
-farmer = Role("Farmer", [farm_strong, farm_weak], {"food": 30, "tools": 2})
-smith = Role("Smith", [craft_tools], {"tools": 0})
+                  {"wood": 0, "tools": 5})
+farmer = Role("Farmer", [farm_strong, farm_weak], {"food": 10, "tools": 5})
+smith = Role("Smith", [craft_tools], {"tools": 0, "wood": 20})
 
 
 roles = [farmer, lumberjack, smith]
