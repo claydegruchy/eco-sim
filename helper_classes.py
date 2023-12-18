@@ -144,11 +144,12 @@ class Role:
         return resources
 
 
-chop_wood_strong = Recipe("Strong Chop Wood", {"tools": 1}, {"wood": 3})
+chop_wood_strong = Recipe("Strong Chop Wood", {"tools": 1}, {
+                          "wood": 3, "tools": 0.5})
 chop_wood_weak = Recipe("Weak Chop Wood", {}, {"wood": 1})
 craft_tools = Recipe("Craft Tools", {"wood": 1}, {"tools": 1})
-farm_strong = Recipe("Strong Farm", {"tools": 0.5}, {"food": 3, "tools": 0.4})
-farm_weak = Recipe("Weak Farm", {}, {"food": 1})
+farm_strong = Recipe("Strong Farm", {"tools": 1}, {"food": 3, "tools": 0.5})
+farm_weak = Recipe("Weak Farm", {}, {"food": 0.5})
 
 
 lumberjack = Role("Lumberjack",

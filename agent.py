@@ -46,10 +46,11 @@ class EcoAgent(Agent):
             if resource in self.price_assumptions:
                 continue
             self.price_assumptions[resource] = {}
+            current_price = model.price_history[resource][-1]
             self.price_assumptions[resource]['top'] = random.uniform(
-                6, 10)
+                current_price, current_price*1.1)
             self.price_assumptions[resource]['bottom'] = random.uniform(
-                1, 5)
+                current_price, current_price*0.9)
 
         print("Setting up agent")
         self.update_role(role)
@@ -64,8 +65,6 @@ class EcoAgent(Agent):
     def update_role(self, role):
         self.role = role
         self.desired_resources = role.desired_resources
-        print("Agent", self.unique_id, "role updated to",
-              role.name, self.desired_resources)
 
     def clear_orders(self):
         self.last_order_count = len(self.orders)
@@ -148,7 +147,7 @@ class EcoAgent(Agent):
         # print("quantity", quantity)
 
         if quantity < 0:
-            if self.money < 0:
+            if self.money <= 0:
                 return
             if price > self.money:
                 price = self.average_price_assumption(resource)
@@ -194,28 +193,34 @@ class EcoAgent(Agent):
         failure_degree = order.fulfilled / order.inital_quantity
 
         change = 0.05
+        # change_factor = (failure_degree-0.5)
+        # change *= change_factor
+        # print("change_factor", change, change_factor, failure_degree)
+        # exit()
 
         # if i am attempting to sell, and i am not finding buyers, then i should lower my prices
-        if order.type == "sell" and failure_degree < 0.4:
-            bottom = (bottom * (1-change))
+        if order.type == "sell" and failure_degree < 1/3:
+            top = (top * (1-change))
+            bottom = (bottom * (1-(change*2)))
         # if i am attempting to sell, and i am finding buyers, then i should raise my prices
-        if order.type == "sell" and failure_degree > 0.6:
-            print(self.unique_id, "sale success case1", bottom, top)
+        if order.type == "sell" and failure_degree > 2/3:
             top = (top * (1+change))
             bottom = (bottom * (1+change))
-            print(self.unique_id, "sale success case2", bottom, top)
         # if i am attempting to buy, but i am not finding sellers, then i should raise my prices
-        if order.type == "buy" and failure_degree < 0.4:
-            top = (top * (1+change))
+        if order.type == "buy" and failure_degree < 1/3:
+            top = (top * (1+(change*2)))
+            bottom = (bottom * (1+change))
         # if i am attempting to buy, and i am easily finding sellers, then i should lower my prices
-        if order.type == "buy" and failure_degree > 0.6:
-            bottom = (bottom * (1-change))
+        if order.type == "buy" and failure_degree > 2/3:
             top = (top * (1-change))
+            bottom = (bottom * (1-change))
 
         # if the order is being fulfilled at the desired rate, then the price assumption should contract
-        if .4 < failure_degree < .6:
-            top = (top * (1-change))
-            bottom = (bottom * (1+change))
+        if 1/3 < failure_degree < 2/3:
+            top = (top * (1-change*2))
+            bottom = (bottom * (1+change*2))
+        if top < bottom:
+            top = bottom + 0.0000001
 
         self.price_assumptions[resource]['top'] = max(top, 0.0000001)
         self.price_assumptions[resource]['bottom'] = max(bottom, 0.0000001)

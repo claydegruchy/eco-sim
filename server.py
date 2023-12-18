@@ -11,52 +11,36 @@ import hashlib
 from helper_classes import resource_finder, roles
 
 
+
+
 class TableElement(TextElement):
     def __init__(self, lambda_data):
         self.lambda_data = lambda_data
 
     def render(self, model):
-        # val = getattr(model, self.attr_name)
-        # return self.attr_name + ":<b> " + str(val)+"</b>"
-        # creating the dataframe
-        df = pd.DataFrame({"Name": ['Anurag', 'Manjeet', 'Shubham',
-                                    'Saurabh', 'Ujjawal'],
-
-                           "Address": ['Patna', 'Delhi', 'Coimbatore',
-                                       'Greater noida', 'Patna'],
-
-                           "ID": [20123, 20124, 20145, 20146, 20147],
-
-                           "Sell": [140000, 300000, 600000, 200000, 600000]})
-        # print(model.datacollector.get_table_dataframe("Final_Values"))
-
         return table_style(self.lambda_data(model))
 
 
+class SimpleText(TextElement):
+    def __init__(self, lambda_data):
+        self.lambda_data = lambda_data
+
+    def render(self, model):
+        return self.lambda_data(model)
+
+
 def colour_gen(word):
-    # Use hashlib to create a hash value from the word using MD5
     hash_object = hashlib.md5(word.encode('utf-8'))
-
-    # convert to rgb
-
     return [int(hash_object.hexdigest()[:2], 16), int(hash_object.hexdigest()[2:4], 16), int(hash_object.hexdigest()[4:6], 16)]
 
 
 def colour_str(word, tint=1):
     s = colour_gen(word)
     s = [clamp(int(x*tint), 0, 255) for x in s]
-
     return f"rgb({s[0]},{s[1]},{s[2]})"
 
 
 def clamp(n, minn, maxn): return max(min(maxn, n), minn)
-
-
-# For Rectangles:
-# "w", "h": The width and height of the rectangle, which are in
-#             fractions of cell width and height.
-# "xAlign", "yAlign": Alignment of the rectangle within the
-#                     cell. Defaults to 0.5 (center).
 
 
 def agent_portrayal(agent):
@@ -73,7 +57,7 @@ def agent_portrayal(agent):
         # "r": 0.5,
 
         "Shape": "rect",
-        "w": food,
+        "w": max(food, 0.1),
         "h": 0.9,
         # "xAlign": 10,
         # "yAlign": 10,
@@ -81,7 +65,7 @@ def agent_portrayal(agent):
 
         "Filled": "false",
         # "Color": f"red",
-        "Color": f"rgba({role[0]},{role[1]}, {role[2]}, {money})",
+        "Color": f"rgba({role[0]},{role[1]}, {role[2]}, {max(money, 0.1)})",
         "Layer": 0,
         # "text_color": "rgb(255, 255, 0)",
         "text_color": "black",
@@ -129,10 +113,8 @@ for resource in resource_finder():
 
 agent_report_data = [
     {"Label": "Agents", "Color": colour_str("Agents")},
-    {"Label": "Dead Agents", "Color": colour_str("Dead Agents")},
+    # {"Label": "Dead Agents", "Color": colour_str("Dead Agents")},
 ]
-
-
 for role in roles:
     agent_report_data.append({"Label": role.name+"_count",
                               "Color": colour_str(role.name)})
@@ -158,6 +140,8 @@ pie_chat = PieChartModule(
 table_all_model_data = TableElement(
     lambda m: m.datacollector.get_model_vars_dataframe())
 
+simple_kpis = SimpleText(lambda m: f"Dead Agents: {len(m.dead_agents)}")
+
 
 # generates the table of agent stats
 selected_agent_stats = ['money', 'production',
@@ -179,12 +163,14 @@ print("[Server]", "setting up w/h", width, height)
 # Create and launch the server
 server = ModularServer(
     EcoModel,
-    [grid,
+    [simple_kpis,
+     table_agent_stats,
+     
 
      trade_report,
+     grid,
      agent_report,
      #  agent_stats,
-     table_agent_stats,
      #  table_all_model_data
      pie_chat,
      ],

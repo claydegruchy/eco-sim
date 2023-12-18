@@ -147,6 +147,11 @@ class EcoModel(Model):
                 # find an average between the two prices
                 price = (buy_order.ppu + sell_order.ppu) / 2
                 quantity = min(buy_order.quantity, sell_order.quantity)
+                if quantity*price > buy_order.initator.money:
+                    print("Not enough money to buy", quantity,
+                          "of", resource, "at", price)
+                    quantity = buy_order.initator.money / price
+                    print("Buying", quantity, "instead")
                 trade = Trade(resource, sell_order, buy_order, quantity, price)
                 # trade and fulfill the orders
                 self.register_trade(trade)
@@ -216,11 +221,8 @@ class EcoModel(Model):
         # select the role with the highest profitability
         profitability.sort(key=lambda x: x[1], reverse=True)
 
-        # print("Profitability", profitability)
-        # exit()
-        # for role in roles:
-        # role.get_profitability(agent)
-        # pick random from roles
+        print("Agent", agent.unique_id, "role updated to most profitable role:",
+              profitability[0][0].name, profitability[0][1])
         return profitability[0][0]
 
     def kill_agent(self, agent):
