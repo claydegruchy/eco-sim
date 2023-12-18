@@ -1,3 +1,20 @@
+
+import base64
+import io
+
+
+def chart(df):
+    my_stringIObytes = io.BytesIO()
+    df.plot(title="DataFrame Plot").figure.savefig(
+        my_stringIObytes, format='jpg')
+    my_stringIObytes.seek(0)
+    my_base64_jpgData = base64.b64encode(my_stringIObytes.read()).decode()
+    return '<img src="data:image/png;base64, {}">'.format(my_base64_jpgData)
+
+
+
+
+
 def table_style(df):
     return f'''<html>
     <head>

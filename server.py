@@ -1,7 +1,12 @@
 from mesa.visualization.modules import CanvasGrid, ChartModule, TextElement, PieChartModule
 from mesa.visualization.ModularVisualization import ModularServer
-from report_helpers import table_style, ColourMaker
+from report_helpers import table_style, ColourMaker, chart
 import math
+
+import pandas as pd
+
+# print(chart()
+# exit()
 
 import pandas as pd
 
@@ -11,6 +16,12 @@ import hashlib
 from helper_classes import resource_finder, roles
 
 
+class PandasChartElement(TextElement):
+    def __init__(self, lambda_data):
+        self.lambda_data = lambda_data
+
+    def render(self, model):
+        return chart(self.lambda_data(model))
 
 
 class TableElement(TextElement):
@@ -125,6 +136,7 @@ for role in roles:
 trade_report = ChartModule(trade_report_data)
 agent_report = ChartModule(agent_report_data)
 
+
 # chart_element = ChartModule(
 #     chart_data
 # )
@@ -141,6 +153,9 @@ table_all_model_data = TableElement(
     lambda m: m.datacollector.get_model_vars_dataframe())
 
 simple_kpis = SimpleText(lambda m: f"Dead Agents: {len(m.dead_agents)}")
+
+# test = PandasChartElement(lambda m: pd.DataFrame(
+#     m.price_history))
 
 
 # generates the table of agent stats
@@ -163,17 +178,19 @@ print("[Server]", "setting up w/h", width, height)
 # Create and launch the server
 server = ModularServer(
     EcoModel,
-    [simple_kpis,
-     table_agent_stats,
-     
+    [
+        test,
+        simple_kpis,
+        table_agent_stats,
 
-     trade_report,
-     grid,
-     agent_report,
-     #  agent_stats,
-     #  table_all_model_data
-     pie_chat,
-     ],
+
+        trade_report,
+        grid,
+        agent_report,
+        #  agent_stats,
+        #  table_all_model_data
+        pie_chat,
+    ],
     "Eco Simulation",
     {"width": width, "height": height, "num_agents": num_agents, }
 )
