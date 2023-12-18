@@ -27,7 +27,7 @@ min_price = 0.0000001
 class EcoAgent(Agent):
     def __init__(self, unique_id, model, role, color="red"):
         super().__init__(unique_id, model)
-
+        self.age = 0
         self.resources = {
             "food": 20,
         }
@@ -83,6 +83,7 @@ class EcoAgent(Agent):
         self.produce_resources()
         self.trade()
         self.clear_orders()
+        self.age += 1
 
     def agent_name(self):
         return f"Agent {self.unique_id}"

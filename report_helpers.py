@@ -1,6 +1,8 @@
+import pandas as pd
 
 import base64
 import io
+from helper_classes import resource_finder, roles
 
 
 def chart(df):
@@ -10,9 +12,6 @@ def chart(df):
     my_stringIObytes.seek(0)
     my_base64_jpgData = base64.b64encode(my_stringIObytes.read()).decode()
     return '<img src="data:image/png;base64, {}">'.format(my_base64_jpgData)
-
-
-
 
 
 def table_style(df):
@@ -70,3 +69,41 @@ class ColourMaker:
 
     def reset(self):
         self.current = 0
+
+
+selected_agent_stats = ['age', 'money', 'production',
+                        'last_production', 'last_trade', 'last_order_count']
+agent_resources = list(resource_finder())
+
+
+def highlight_max(s):
+    '''
+    highlight the maximum in a Series yellow.
+    '''
+    is_max = s == s.max()
+    return ['background-color: yellow' if v else '' for v in is_max]
+
+# a function that returns red if lowest, green if highest, and white otherwise.
+
+
+def color_red_or_green(val):
+    if val == val.min():
+        color = 'red'
+    elif val == val.max():
+        color = 'green'
+    else:
+        color = 'white'
+    return ['background-color: %s' % color for v in val]
+
+
+def agent_table_generator(m):
+    return pd.DataFrame([[a.unique_id, a.role.name] +
+                         [a.get_stat(stat) for stat in selected_agent_stats] +
+                         [a.get_resource(
+                             res) for res in agent_resources]
+                         for a in m.schedule.agents],
+                        columns=["id", "role",]+selected_agent_stats+agent_resources) \
+        .style.applymap(lambda x: 'background-color : red' if x < 5 else 'background-color : green', subset=['food'])\
+        .applymap(lambda x: 'background-color : yellow' if x < 15 and x > 5 else '', subset=['food'])
+    # style food column red if under 5, green if over 15, yellow if between
+    # .applymap(lambda x: 'background-color : yellow' if x < 15 and x > 5 else '', subset=['food'])

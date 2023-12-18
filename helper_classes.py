@@ -41,17 +41,17 @@ class Order(_Base_Order):
     def fulfill(self, quantity):
         self.fulfilled += quantity
         self.quantity -= quantity
-        print("Order fulfilled", quantity, self)
+        print("[Order]Order fulfilled", quantity, self)
 
     def is_fulfilled(self):
         return self.fulfilled >= self.quantity
 
     def resolve_order(self):
-        print("Order resolved", self)
+        print("[Order]Order resolved", self)
         self.closed = True
 
     def discard_order(self):
-        print("Order discarded", self)
+        print("[Order]Order discarded", self)
         self.closed = True
 
 
@@ -61,7 +61,7 @@ class Trade(_Base_Order):
                              sell_order.id + "=>" + buy_order.id)
         self.sell_order = sell_order
         self.buy_order = buy_order
-        print("Trade created", self)
+        print("[Trade]Trade created", self)
 
 
 class Recipe:
@@ -93,7 +93,8 @@ class Recipe:
             # here is a gaussian distribution where lower numbers produce smaller outputs
             # quantity = quantity * random.gauss(agent.production, 0.1)
 
-            agent.add_resource(resource, quantity*agent.production)
+            # agent.add_resource(resource, quantity*agent.production)
+            agent.add_resource(resource, quantity)
             return quantity
         # print("Inventory:", old_inventory, "->", agent.resources)
 
@@ -131,8 +132,12 @@ class Role:
     def make_recipe(self, agent):
         for recipe in self.recipes:
             if recipe.can_make(agent):
-                return recipe.make_recipe(agent)
-        print("No recipes can be made", agent.unique_id, self.name)
+                if recipe.get_profitability(agent) > 0:
+                    return recipe.make_recipe(agent)
+                else:
+                    print("[Role]Recipe not profitable",
+                          agent.unique_id, recipe.name)
+        print("[Role]No recipes can be made", agent.unique_id, self.name)
 
     def get_created_resources(self):
         resources = {}
@@ -147,19 +152,33 @@ class Role:
 chop_wood_strong = Recipe("Strong Chop Wood", {"tools": 1}, {
                           "wood": 3, "tools": 0.5})
 chop_wood_weak = Recipe("Weak Chop Wood", {}, {"wood": 1})
-craft_tools = Recipe("Craft Tools", {"wood": 1}, {"tools": 1})
-farm_strong = Recipe("Strong Farm", {"tools": 1}, {"food": 3, "tools": 0.5})
+craft_tools_strong = Recipe("Strong Craft Tools", {"iron": 1}, {"tools": 3})
+craft_tools_weak = Recipe("Weak Craft Tools", {"wood": 1}, {"tools": 1})
+farm_strong = Recipe("Strong Farm", {"tools": 1}, {"grain": 10, "tools": 0.5})
 farm_weak = Recipe("Weak Farm", {}, {"food": 0.5})
+bake_bread_1 = Recipe("Bake Bread", {"grain": 5}, {"food": 6})
+bake_bread_2 = Recipe("Bake Bread", {"grain": 4}, {"food": 4.5})
+bake_bread_3 = Recipe("Bake Bread", {"grain": 3}, {"food": 3})
+bake_bread_4 = Recipe("Bake Bread", {"grain": 2}, {"food": 2})
+bake_bread_5 = Recipe("Bake Bread", {"grain": 1}, {"food": 1})
+mine_ore_strong = Recipe("Strong Mine Ore", {"tools": 1}, {
+                         "iron": 3, "tools": 0.9})
+mine_ore_weak = Recipe("Weak Mine Ore", {}, {"iron": 0.5})
 
 
 lumberjack = Role("Lumberjack",
                   [chop_wood_strong, chop_wood_weak],
                   {"wood": 0, "tools": 5})
 farmer = Role("Farmer", [farm_strong, farm_weak], {"food": 10, "tools": 5})
-smith = Role("Smith", [craft_tools], {"tools": 0, "wood": 20})
+smith = Role("Smith", [craft_tools_strong, craft_tools_weak], {
+             "tools": 0, "wood": 20})
+baker = Role("Baker", [bake_bread_1, bake_bread_2, bake_bread_3,
+             bake_bread_4, bake_bread_5,], {"food": 10, "grain": 30})
+miner = Role("Miner", [mine_ore_strong, mine_ore_weak],
+             {"iron": 0, "tools": 5})
 
 
-roles = [farmer, lumberjack, smith]
+roles = [farmer, lumberjack, smith, baker, miner]
 
 
 def resource_finder():

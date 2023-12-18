@@ -1,16 +1,8 @@
 from mesa.visualization.modules import CanvasGrid, ChartModule, TextElement, PieChartModule
 from mesa.visualization.ModularVisualization import ModularServer
-from report_helpers import table_style, ColourMaker, chart
+from report_helpers import table_style, ColourMaker, chart, agent_table_generator
 import math
-
 import pandas as pd
-
-# print(chart()
-# exit()
-
-import pandas as pd
-
-
 from model import EcoModel
 import hashlib
 from helper_classes import resource_finder, roles
@@ -83,12 +75,12 @@ def agent_portrayal(agent):
 
 
 
-        "text": f'''{agent.unique_id}:{round(agent.production,1)}''',
+        "text": f'''{agent.role}:{round(agent.money,1)}''',
     }
     return portrayal
 
 
-num_agents = 10
+num_agents = 30
 
 # Set up the grid
 grid = CanvasGrid(agent_portrayal, 10, 10, 800, 500)
@@ -159,15 +151,12 @@ simple_kpis = SimpleText(lambda m: f"Dead Agents: {len(m.dead_agents)}")
 
 
 # generates the table of agent stats
-selected_agent_stats = ['money', 'production',
+selected_agent_stats = ['age', 'money', 'production',
                         'last_production', 'last_trade', 'last_order_count']
 agent_resources = list(resource_finder())
 table_agent_stats = TableElement(
-    lambda m: pd.DataFrame([[a.unique_id, a.role.name] +
-                            [a.get_stat(stat) for stat in selected_agent_stats] +
-                            [a.get_resource(res) for res in agent_resources]
-                            for a in m.schedule.agents],
-                           columns=["id", "role",]+selected_agent_stats+agent_resources), )
+    lambda m: agent_table_generator(m)
+)
 
 
 width = int(math.sqrt(num_agents))
@@ -179,7 +168,7 @@ print("[Server]", "setting up w/h", width, height)
 server = ModularServer(
     EcoModel,
     [
-        test,
+        # test,
         simple_kpis,
         table_agent_stats,
 
