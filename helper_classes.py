@@ -100,9 +100,11 @@ class Recipe:
     def get_profitability(self, agent):
         profitability = 0
         for resource, quantity in self.produces.items():
-            profitability += agent.price_assumptions[resource] * quantity
+            profitability += agent.average_price_assumption(
+                resource) * quantity
         for resource, quantity in self.requires.items():
-            profitability -= agent.price_assumptions[resource] * quantity
+            profitability -= agent.average_price_assumption(
+                resource) * quantity
         return profitability
 
 
@@ -113,6 +115,12 @@ class Role:
         self.desired_resources = desired_resources
         if "food" not in self.desired_resources:
             self.desired_resources["food"] = 20
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.__str__()
 
     def get_profitability(self, agent):
         profitability = 0

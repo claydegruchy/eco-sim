@@ -54,9 +54,10 @@ class EcoModel(Model):
 
         # Create agents
         for i in range(self.num_agents):
-            normalised = i / self.num_agents+0.5
-            # Use next_id() to generate unique agent id
-            self.create_agent(random.choice(roles), normalised)
+            # generate a distribution of efficiency
+            # normalised = i / self.num_agents+0.5
+            # self.create_agent(random.choice(roles), normalised)
+            self.create_agent(random.choice(roles))
 
         model_reporters = {"Total Food": "total_food",
                            "Agents": lambda m: m.schedule.get_agent_count(),
@@ -76,12 +77,15 @@ class EcoModel(Model):
             model_reporters[resource +
                             "_median_assummed"] = lambda m, resource=resource: median([a.average_price_assumption(resource) for a in m.schedule.agents])
 
+        # role counts
+        for role in roles:
+            model_reporters[role.name+"_count"] = lambda m, role=role: len(
+                [a for a in m.schedule.agents if a.role.name == role.name])
+
         self.datacollector = DataCollector(
             agent_reporters={"Food": "food",
                              "Money": "money",
                              "Production": "production",
-
-
                              },
             model_reporters=model_reporters,
             tables={
@@ -156,14 +160,10 @@ class EcoModel(Model):
                     buy_orders.pop(0)
 
                 orders -= 1
-
         # print("Resources:", resources)
         print("Market closed",
               f"{self.day_trades} trades and {total_orders} orders")
         return
-
-        self.buy_orders.clear()
-        self.sell_orders.clear()
 
     def register_trade(self, trade: Trade):
         # register the trade
@@ -210,12 +210,18 @@ class EcoModel(Model):
             order.initator.update_price_assumption(order)
 
     def find_role(self, agent):
-        # potential_roles = [role.get_profitability(agent) for role in roles ]
-        # profitability = [role.get_profitability(agent) for role in roles ]
+        profitability = [
+            [role, role.get_profitability(agent)] for role in roles]
+
+        # select the role with the highest profitability
+        profitability.sort(key=lambda x: x[1], reverse=True)
+
+        # print("Profitability", profitability)
+        # exit()
         # for role in roles:
         # role.get_profitability(agent)
         # pick random from roles
-        return random.choice(roles)
+        return profitability[0][0]
 
     def kill_agent(self, agent):
         print("Agent died", agent.unique_id)

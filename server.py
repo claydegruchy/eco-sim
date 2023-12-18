@@ -1,13 +1,14 @@
-from mesa.visualization.modules import CanvasGrid, ChartModule, TextElement
+from mesa.visualization.modules import CanvasGrid, ChartModule, TextElement, PieChartModule
 from mesa.visualization.ModularVisualization import ModularServer
-from html_tools import table_style
+from report_helpers import table_style, ColourMaker
+import math
 
 import pandas as pd
 
 
 from model import EcoModel
 import hashlib
-from helper_classes import resource_finder
+from helper_classes import resource_finder, roles
 
 
 class TableElement(TextElement):
@@ -41,8 +42,9 @@ def colour_gen(word):
     return [int(hash_object.hexdigest()[:2], 16), int(hash_object.hexdigest()[2:4], 16), int(hash_object.hexdigest()[4:6], 16)]
 
 
-def colour_str(word):
+def colour_str(word, tint=1):
     s = colour_gen(word)
+    s = [clamp(int(x*tint), 0, 255) for x in s]
 
     return f"rgb({s[0]},{s[1]},{s[2]})"
 
@@ -91,7 +93,7 @@ def agent_portrayal(agent):
     return portrayal
 
 
-num_agents = 20
+num_agents = 10
 
 # Set up the grid
 grid = CanvasGrid(agent_portrayal, 10, 10, 800, 500)
@@ -107,20 +109,50 @@ chart_data = [
     {"Label": "Dead Agents", "Color": colour_str("Dead Agents")}
 ]
 
+
+trade_report_data = [
+    {"Label": "Day Trades", "Color": colour_str("Day Trades")},
+]
+
+trade_report_colours = ColourMaker()
+
+
 for resource in resource_finder():
-    # if resource != "food":
-    # continue
-    chart_data.append({"Label": resource+"_price",
-                      "Color": colour_str(resource+"_price")})
 
-    chart_data.append({"Label": resource+"_avg_assummed",
-                      "Color": colour_str(resource+"_avg_assummed")})
-    # chart_data.append({"Label": resource+"_median_assummed",
-    #                   "Color": colour_str(resource+"_median_assummed")})
+    trade_report_data.append({"Label": resource+"_price",
+                             "Color": trade_report_colours.selected(0.5)})
+
+    trade_report_data.append({"Label": resource+"_avg_assummed",
+                             "Color": trade_report_colours.selected(1)})
+    trade_report_colours.next()
 
 
-chart_element = ChartModule(
-    chart_data
+agent_report_data = [
+    {"Label": "Agents", "Color": colour_str("Agents")},
+    {"Label": "Dead Agents", "Color": colour_str("Dead Agents")},
+]
+
+
+for role in roles:
+    agent_report_data.append({"Label": role.name+"_count",
+                              "Color": colour_str(role.name)})
+
+
+# agent_report_data = []
+
+trade_report = ChartModule(trade_report_data)
+agent_report = ChartModule(agent_report_data)
+
+# chart_element = ChartModule(
+#     chart_data
+# )
+
+
+pie_chat = PieChartModule(
+    [{"Label": role.name+"_count",
+        "Color": colour_str(role.name)} for role in roles]
+
+    # [{"Label": "Farmer_count", "Color": colour_str("Farmer_count")}]
 )
 
 table_all_model_data = TableElement(
@@ -128,25 +160,36 @@ table_all_model_data = TableElement(
 
 
 # generates the table of agent stats
-agent_stats = ['money', 'production',
-               'last_production', 'last_trade', 'last_order_count']
+selected_agent_stats = ['money', 'production',
+                        'last_production', 'last_trade', 'last_order_count']
 agent_resources = list(resource_finder())
 table_agent_stats = TableElement(
     lambda m: pd.DataFrame([[a.unique_id, a.role.name] +
-                            [a.get_stat(stat) for stat in agent_stats] +
+                            [a.get_stat(stat) for stat in selected_agent_stats] +
                             [a.get_resource(res) for res in agent_resources]
                             for a in m.schedule.agents],
-                           columns=["id", "role",]+agent_stats+agent_resources), )
+                           columns=["id", "role",]+selected_agent_stats+agent_resources), )
 
+
+width = int(math.sqrt(num_agents))
+height = int(num_agents / width) + 1
+
+print("[Server]", "setting up w/h", width, height)
 
 # Create and launch the server
 server = ModularServer(
     EcoModel,
-    [grid, chart_element, table_agent_stats,
+    [grid,
+
+     trade_report,
+     agent_report,
+     #  agent_stats,
+     table_agent_stats,
      #  table_all_model_data
+     pie_chat,
      ],
     "Eco Simulation",
-    {"width": 5, "height": 4, "num_agents": num_agents, }
+    {"width": width, "height": height, "num_agents": num_agents, }
 )
 server.port = 8521  # The default port number
 
