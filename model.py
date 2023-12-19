@@ -41,7 +41,7 @@ class EcoModel(Model):
         # self.sell_orders = []
         self.orders = []
         self.price_history = dict(
-            zip(potential_resources, [[5] for x in range(len(potential_resources))]))
+            zip(potential_resources, [[1] for x in range(len(potential_resources))]))
 
         # report variables
         self.total_trades = 0

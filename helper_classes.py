@@ -74,6 +74,12 @@ class Recipe:
         self.requires = requires
         self.produces = produces
 
+    def pr(self, x: list):
+        return ','.join([f"{k}={v}" for k, v in x.items()])
+
+    def __str__(self) -> str:
+        return f"[Recipe]{self.name} IN:{self.pr(self.requires)} OUT:{self.pr(self.produces)}"
+
     def can_make(self, agent):
         for resource, quantity in self.requires.items():
             if resource not in agent.resources:
@@ -91,16 +97,11 @@ class Recipe:
         for resource, quantity in self.requires.items():
             agent.remove_resource(resource, (quantity))
         for resource, quantity in self.produces.items():
-            # using gaussian distribution to simulate randomness and highlight changes
-            # this can go into negatives!
-
             # here is a gaussian distribution where lower numbers produce smaller outputs
             # quantity = quantity * random.gauss(agent.production, 0.1)
 
-            # agent.add_resource(resource, quantity*agent.production)
             agent.add_resource(resource, quantity)
             return quantity
-        # print("Inventory:", old_inventory, "->", agent.resources)
 
     def get_profitability(self, agent):
         profitability = 0
@@ -119,7 +120,7 @@ class Role:
         self.recipes = recipes
         self.desired_resources = desired_resources
         if "food" not in self.desired_resources:
-            self.desired_resources["food"] = 20
+            self.desired_resources["food"] = 3
 
     def __str__(self):
         return self.name
@@ -141,7 +142,11 @@ class Role:
                 else:
                     print("[Role]Recipe not profitable",
                           agent.unique_id, recipe.name)
+            else:
+                print("[Role]Recipe cannot be made", recipe)
         print("[Role]No recipes can be made", agent.unique_id, self.name)
+        # idle tax
+        agent.money -= 2
 
     def get_created_resources(self):
         resources = {}
@@ -153,29 +158,83 @@ class Role:
         return resources
 
 
-chop_wood_strong = Recipe("Strong Chop Wood", {"tools": 1}, {
-                          "wood": 3, "tools": 0.5})
-chop_wood_weak = Recipe("Weak Chop Wood", {}, {"wood": 1})
-craft_tools_strong = Recipe("Strong Craft Tools", {"wood": 2}, {"tools": 3})
-craft_tools_weak = Recipe("Weak Craft Tools", {"wood": 1}, {"tools": 1})
-farm_strong = Recipe("Strong Farm", {"tools": 1}, {"food": 3, "tools": 0.5})
-farm_weak = Recipe("Weak Farm", {}, {"food": 0.5})
-mine_ore_strong = Recipe("Strong Mine Ore", {"tools": 1}, {
-                         "iron": 3, "tools": 0.9})
-mine_ore_weak = Recipe("Weak Mine Ore", {}, {"iron": 0.5})
+# Recipes
+farm_strong =\
+    Recipe("Strong Farm",
+           {"tools": .1, "wood": 1},
+           {"food": 4, })
+farm_medium =\
+    Recipe("Medium Farm",
+           {"wood": 1},
+           {"food": 2})
+farm_weak =\
+    Recipe("Weak Farm",
+           {},
+           {"food": 1})
+chop_wood_strong =\
+    Recipe("Strong Chop Wood",
+           {"tools": .1},
+           {"wood": 2, })
+chop_wood_weak =\
+    Recipe("Weak Chop Wood",
+           {},
+           {"wood": 1})
+craft_tools_strong =\
+    Recipe("Strong Craft Tools",
+           {"iron": 2},
+           {"tools": 2})
+# craft_tools_weak =\
+#  Recipe("Weak Craft Tools",
+# {"wood": 1},
+#  {"tools": .1})
+mine_ore_strong =\
+    Recipe("Strong Mine Ore",
+           {"tools": .1},
+           {"ore": 3, })
+mine_ore_weak =\
+    Recipe("Weak Mine Ore",
+           {},
+           {"ore": 2})
+smelt_ore_strong =\
+    Recipe("Strong Smelt Ore",
+           {"ore": 3, "tools": .1},
+           {"iron": 3, })
+smelt_ore_weak =\
+    Recipe("Weak Smelt Ore",
+           {"ore": 2},
+           {"iron": 2})
 
 
-lumberjack = Role("Lumberjack",
-                  [chop_wood_strong, chop_wood_weak],
-                  {"wood": 0, "tools": 5})
-farmer = Role("Farmer", [farm_strong, farm_weak], {"food": 10, "tools": 5})
-smith = Role("Smith", [craft_tools_strong, craft_tools_weak], {
-             "tools": 0, "wood": 20})
-miner = Role("Miner", [mine_ore_strong, mine_ore_weak],
-             {"iron": 0, "tools": 5})
+# Roles
+farmer =\
+    Role("Farmer",
+         [farm_strong, farm_medium],
+         {"food": 3, "tools": 2, "wood": 3})
+lumberjack =\
+    Role("Lumberjack",
+         [chop_wood_strong, chop_wood_weak],
+         {"tools": 2})
+smith =\
+    Role("Smith",
+         [craft_tools_strong],
+         {"iron": 5})
+miner =\
+    Role("Miner",
+         [mine_ore_strong, mine_ore_weak],
+         {"tools": 2})
+smelter =\
+    Role("Smelter",
+         [smelt_ore_strong, smelt_ore_weak],
+         {"ore": 5, "tools": 2})
 
 
-roles = [farmer, lumberjack, smith,]
+roles = [farmer, lumberjack, smith, miner, smelter]
+
+# quickly makes all recpeies require food to operate, with the exception of food recipes
+for role in roles:
+    for recipe in role.recipes:
+        if 'food' not in recipe.produces:
+            recipe.requires['food'] = 1
 
 
 def resource_finder():

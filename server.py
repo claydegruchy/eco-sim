@@ -136,13 +136,7 @@ table_all_model_data = TableElement(
 
 simple_kpis = SimpleText(lambda m: f"Dead Agents: {len(m.dead_agents)}")
 
-# test = PandasChartElement(lambda m: pd.DataFrame(
-#     m.price_history))
 
-
-# generates the table of agent stats
-selected_agent_stats = ['age', 'money', 'production',
-                        'last_production', 'last_trade', 'last_order_count']
 agent_resources = list(resource_finder())
 table_agent_stats = TableElement(
     lambda m: agent_table_generator(m)
@@ -154,7 +148,8 @@ height = int(num_agents / width) + 1
 grid = CanvasGrid(agent_portrayal, 10, 10, 800, 500)
 
 
-print("[Server]", "setting up w/h", width, height)
+
+int("[Server]", "setting up w/h", width, height)
 
 # Create and launch the server
 server = ModularServer(

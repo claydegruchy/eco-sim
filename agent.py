@@ -29,15 +29,11 @@ class EcoAgent(Agent):
         super().__init__(unique_id, model)
         self.age = 0
         self.resources = {
-            "food": 20,
+            "food": 3,
         }
         self.desired_resources = {}
 
         self.price_assumptions = {
-            "food": {
-                "top": 6,
-                "bottom": 4,
-            },
         }
         # print("Setting up price assumptions")
         for resource in resource_finder():
@@ -109,10 +105,12 @@ class EcoAgent(Agent):
 
     def consume_resources(self):
         # Agent resource consumption logic
-        self.remove_resource("food", 1)
-        # print("Agent consuming resources", self.unique_id, self.resources)
-        if self.get_resource("food") < 1:
+        if self.money <= 0:
+            self.money = 0
             self.starve()
+        # rot food
+        current = self.get_resource("food")
+        self.remove_resource("food", current*0.01)
 
     def produce_resources(self):
         self.last_production = self.role.make_recipe(self)
