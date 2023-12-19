@@ -17,7 +17,7 @@ class _Base_Order:
             self.id = random_string()
 
     def __str__(self):
-        return f"ID:{self.id} R:{self.resource} V:{type(self).__name__} QTY:{self.quantity} PPU:{self.ppu} "
+        return f"R:{self.resource} V:{type(self).__name__} QTY:{self.quantity} PPU:{self.ppu} ID:{self.id} "
 
     def __repr__(self):
         return self.__str__()
@@ -30,13 +30,14 @@ class Order(_Base_Order):
         self.type = type
         self.fulfilled = fulfilled
         self.inital_quantity = quantity
+        self.trades = []
 
         if type not in ["buy", "sell"]:
             raise Exception("Invalid order type, must be buy or sell")
         print("Order created", self)
 
     def __str__(self):
-        return f"ID:{self.id} A:{self.initator.unique_id} O:{self.type} V:{type(self).__name__} QTY:{self.fulfilled}/{self.inital_quantity}({round(self.fulfilled/self.inital_quantity*100,2)}) PPU:{round(self.ppu,2)} "
+        return f"R:{self.resource} A:{self.initator.unique_id} O:{self.type} V:{type(self).__name__} QTY:{self.fulfilled}/{self.inital_quantity}({round(self.fulfilled/self.inital_quantity*100,2)}) PPU:{round(self.ppu,2)} ID:{self.id} "
 
     def fulfill(self, quantity):
         self.fulfilled += quantity
@@ -61,6 +62,9 @@ class Trade(_Base_Order):
                              sell_order.id + "=>" + buy_order.id)
         self.sell_order = sell_order
         self.buy_order = buy_order
+        self.sell_order.trades.append(self)
+        self.buy_order.trades.append(self)
+
         print("[Trade]Trade created", self)
 
 
@@ -152,9 +156,9 @@ class Role:
 chop_wood_strong = Recipe("Strong Chop Wood", {"tools": 1}, {
                           "wood": 3, "tools": 0.5})
 chop_wood_weak = Recipe("Weak Chop Wood", {}, {"wood": 1})
-craft_tools_strong = Recipe("Strong Craft Tools", {"iron": 1}, {"tools": 3})
+craft_tools_strong = Recipe("Strong Craft Tools", {"wood": 2}, {"tools": 3})
 craft_tools_weak = Recipe("Weak Craft Tools", {"wood": 1}, {"tools": 1})
-farm_strong = Recipe("Strong Farm", {"tools": 1}, {"food": 10, "tools": 0.5})
+farm_strong = Recipe("Strong Farm", {"tools": 1}, {"food": 3, "tools": 0.5})
 farm_weak = Recipe("Weak Farm", {}, {"food": 0.5})
 mine_ore_strong = Recipe("Strong Mine Ore", {"tools": 1}, {
                          "iron": 3, "tools": 0.9})
@@ -171,7 +175,7 @@ miner = Role("Miner", [mine_ore_strong, mine_ore_weak],
              {"iron": 0, "tools": 5})
 
 
-roles = [farmer, lumberjack, smith,  miner]
+roles = [farmer, lumberjack, smith,]
 
 
 def resource_finder():

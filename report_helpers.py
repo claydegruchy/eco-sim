@@ -107,3 +107,15 @@ def agent_table_generator(m):
         .applymap(lambda x: 'background-color : yellow' if x < 15 and x > 5 else '', subset=['food'])
     # style food column red if under 5, green if over 15, yellow if between
     # .applymap(lambda x: 'background-color : yellow' if x < 15 and x > 5 else '', subset=['food'])
+
+
+class EventReport:
+    def __init__(self,):
+        self.events = [["Server", "Server started."]]
+
+    def add_event(self, actor, text):
+        self.events.append([actor, text])
+
+    def get_events(self):
+        # return the last 10 events
+        return pd.DataFrame(self.events[-10:], columns=["Actor", "Event"])

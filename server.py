@@ -1,6 +1,6 @@
 from mesa.visualization.modules import CanvasGrid, ChartModule, TextElement, PieChartModule
 from mesa.visualization.ModularVisualization import ModularServer
-from report_helpers import table_style, ColourMaker, chart, agent_table_generator
+from report_helpers import table_style, ColourMaker, chart, agent_table_generator, EventReport
 import math
 import pandas as pd
 from model import EcoModel
@@ -80,25 +80,14 @@ def agent_portrayal(agent):
     return portrayal
 
 
+event_reporter = EventReport()
 num_agents = 30
-
-# Set up the grid
-grid = CanvasGrid(agent_portrayal, 10, 10, 800, 500)
-
-
-chart_data = [
-    # {"Label": "Total Money", "Color": colour_str("Total Money")},
-    {"Label": "Agents", "Color": colour_str("Agents")},
-    # {"Label": "Average Money", "Color": colour_str("Average Money")},
-    # {"Label": "Median Money", "Color": colour_str("Median Money")},
-    # {"Label": "Total Trades", "Color": colour_str("Total Trades")},
-    {"Label": "Day Trades", "Color": colour_str("Day Trades")},
-    {"Label": "Dead Agents", "Color": colour_str("Dead Agents")}
-]
 
 
 trade_report_data = [
     {"Label": "Day Trades", "Color": colour_str("Day Trades")},
+    {"Label": "Day Trade Quantity", "Color": colour_str("Day Trade Quantity")},
+
 ]
 
 trade_report_colours = ColourMaker()
@@ -127,6 +116,7 @@ for role in roles:
 
 trade_report = ChartModule(trade_report_data)
 agent_report = ChartModule(agent_report_data)
+event_report = TableElement(lambda m: event_reporter.get_events())
 
 
 # chart_element = ChartModule(
@@ -161,6 +151,8 @@ table_agent_stats = TableElement(
 
 width = int(math.sqrt(num_agents))
 height = int(num_agents / width) + 1
+grid = CanvasGrid(agent_portrayal, 10, 10, 800, 500)
+
 
 print("[Server]", "setting up w/h", width, height)
 
@@ -169,6 +161,8 @@ server = ModularServer(
     EcoModel,
     [
         # test,
+        event_report,
+
         simple_kpis,
         table_agent_stats,
 
@@ -181,7 +175,12 @@ server = ModularServer(
         pie_chat,
     ],
     "Eco Simulation",
-    {"width": width, "height": height, "num_agents": num_agents, }
+    {
+        "width": width,
+        "height": height,
+        "num_agents": num_agents,
+        "event_reporter": event_reporter
+    }
 )
 server.port = 8521  # The default port number
 
