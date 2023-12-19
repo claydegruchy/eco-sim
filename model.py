@@ -211,8 +211,13 @@ class EcoModel(Model):
             self.price_history[resource].append(average_price)
 
     def update_price_assumptions(self):
-        for order in self.orders:
-            order.initator.update_price_assumption(order)
+        # this needs reversal as we now have more orders than agents
+        for agent in self.schedule.agents:
+            orders = [order for order in self.orders if order.initator == agent]
+            for order in orders:
+                agent.update_price_assumptions(order)
+        # for order in self.orders:
+            # order.initator.update_price_assumption(order)
 
     def find_role(self, agent):
         profitability = [

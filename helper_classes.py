@@ -154,13 +154,8 @@ chop_wood_strong = Recipe("Strong Chop Wood", {"tools": 1}, {
 chop_wood_weak = Recipe("Weak Chop Wood", {}, {"wood": 1})
 craft_tools_strong = Recipe("Strong Craft Tools", {"iron": 1}, {"tools": 3})
 craft_tools_weak = Recipe("Weak Craft Tools", {"wood": 1}, {"tools": 1})
-farm_strong = Recipe("Strong Farm", {"tools": 1}, {"grain": 10, "tools": 0.5})
+farm_strong = Recipe("Strong Farm", {"tools": 1}, {"food": 10, "tools": 0.5})
 farm_weak = Recipe("Weak Farm", {}, {"food": 0.5})
-bake_bread_1 = Recipe("Bake Bread", {"grain": 5}, {"food": 6})
-bake_bread_2 = Recipe("Bake Bread", {"grain": 4}, {"food": 4.5})
-bake_bread_3 = Recipe("Bake Bread", {"grain": 3}, {"food": 3})
-bake_bread_4 = Recipe("Bake Bread", {"grain": 2}, {"food": 2})
-bake_bread_5 = Recipe("Bake Bread", {"grain": 1}, {"food": 1})
 mine_ore_strong = Recipe("Strong Mine Ore", {"tools": 1}, {
                          "iron": 3, "tools": 0.9})
 mine_ore_weak = Recipe("Weak Mine Ore", {}, {"iron": 0.5})
@@ -172,13 +167,11 @@ lumberjack = Role("Lumberjack",
 farmer = Role("Farmer", [farm_strong, farm_weak], {"food": 10, "tools": 5})
 smith = Role("Smith", [craft_tools_strong, craft_tools_weak], {
              "tools": 0, "wood": 20})
-baker = Role("Baker", [bake_bread_1, bake_bread_2, bake_bread_3,
-             bake_bread_4, bake_bread_5,], {"food": 10, "grain": 30})
 miner = Role("Miner", [mine_ore_strong, mine_ore_weak],
              {"iron": 0, "tools": 5})
 
 
-roles = [farmer, lumberjack, smith, baker, miner]
+roles = [farmer, lumberjack, smith,  miner]
 
 
 def resource_finder():
