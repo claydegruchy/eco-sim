@@ -11,7 +11,7 @@ farm_medium =\
            {"food": 2})
 farm_weak =\
     Recipe("Weak Farm",
-           {},
+           {"wood": 0.5},
            {"food": 1})
 chop_wood_strong =\
     Recipe("Strong Chop Wood",

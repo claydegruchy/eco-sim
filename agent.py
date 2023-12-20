@@ -32,8 +32,8 @@ class EcoAgent(Agent):
                 current_price, current_price*1.1)
             self.price_assumptions[resource]['bottom'] = random.uniform(
                 current_price, current_price*0.9)
-
-        print("Setting up agent")
+        self.cycles_since_last_trade = 0
+        # print("Setting up agent")
         self.update_role(role)
         self.money = 100  # Starting money
         self.production = random.uniform(0, 2)  # Starting production
@@ -122,6 +122,7 @@ class EcoAgent(Agent):
             if order.initator != self:
                 continue
             # for order in orders:
+            
             price_assumption_logic(self, order, orders, trades)
 
             # exit()

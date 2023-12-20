@@ -225,10 +225,8 @@ class EcoModel(Model):
             self.price_history[resource].append(average_price)
 
     def update_production_history(self):
-        print("self.production_history1", self.production_history)
         for k, v in self.production_history.items():
             v.append(0)
-        print("self.production_history2", self.production_history)
 
     def update_price_assumptions(self):
         for agent in self.schedule.agents:
@@ -262,6 +260,7 @@ class EcoModel(Model):
         self.schedule.step()
 
         self.resolve_orders()
+        self.update_price_assumptions()
 
         self.current_agents = self.schedule.get_agent_count()
         self.update_trade_history()
@@ -274,4 +273,3 @@ class EcoModel(Model):
         self.datacollector.collect(self)
 
         self.clean_up()
-        self.update_price_assumptions()
