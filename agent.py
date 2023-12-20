@@ -1,28 +1,15 @@
 from mesa import Agent
 import random
 import numpy as np
-from simulation_classes import Order, Trade
+from simulation_classes import Order, Trade, percent
 from agent_role_config import roles, resource_finder
+import sys
+sys.path.append('logic/')
+from agent_price_assumption_logic import price_assumption_logic  # noqa: E402
+from agent_trade_logic import trade_logic  # noqa: E402
 
 
-def percent(part, whole):
-    # normalize to either 0 or 1
-    # remaining_quantity, inital_quantity
-    if part == 0.0 or whole == 0.0:
-        return 0.0
-    return float(part)/float(whole)
 
-
-# def scale_range(input, min, max):
-#     input = input + -(np.min(input))
-#     input = input / np.max(input) / (max - min)
-#     input = input + min
-#     return input.tolist()
-
-
-# print(scale_range([0,5,10], 0, 1))
-# exit()
-min_price = 0.0000001
 
 
 class EcoAgent(Agent):
@@ -121,56 +108,7 @@ class EcoAgent(Agent):
         self.model.datacollector.add_table_row("Final_Values", row)
 
     def trade(self):
-        for resouce in self.desired_resources:
-            self.trade_resource(resouce)
-
-    def trade_resource(self, resource):
-        '''
-        Determine-Sale-Quantity(Commodity)
-            1 mean←historical mean price of Commodity
-            2 favorability←position of mean within observed trading range
-            3 amount to sell ←favorability * excess resources of Commodity
-            4 return amount to sell
-        '''
-
-        market_average = self.model.price_history[resource][-1]
-        favorability = percent(
-            market_average, self.average_price_assumption(resource))
-        quantity = favorability * \
-            (self.resources[resource] - self.desired_resources[resource])
-        quantity = round(quantity, 1)
-        if quantity > -1 and quantity < 1:
-            quantity = 0
-        # stop the dickhead agents from selling more than they have
-        if quantity > self.resources[resource]:
-            quantity = self.resources[resource]
-        price = self.random_price_assumption(resource)
-
-        if quantity < 0:
-            if self.money <= 0:
-                return
-            if price > self.money:
-                price = self.average_price_assumption(resource)
-                if price > self.money:
-                    price = self.money
-
-            # we want to buy from the market
-            order = self.model.register_buy_order(
-                resource,
-                self,
-                max(price, min_price),
-                abs(quantity)
-            )
-            self.orders.append(order)
-        if quantity > 0:
-            # we want to sell to the market
-            order = self.model.register_sell_order(
-                resource,
-                self,
-                max(price, min_price),
-                abs(quantity)
-            )
-            self.orders.append(order)
+        trade_logic(self)
 
     def update_price_assumption(self, orders: list[Order], trades: list[Trade]):
         # dont base the assumptions directly on the market price
@@ -181,82 +119,7 @@ class EcoAgent(Agent):
             if order.initator != self:
                 continue
             # for order in orders:
-            resource = order.resource
-            top = self.price_assumptions[resource]['top']
-            bottom = self.price_assumptions[resource]['bottom']
-            ht = self.price_assumptions[resource]['top']
-            hb = self.price_assumptions[resource]['bottom']
-            last_trade_price = self.model.price_history[resource][-1]
-            hisorical_average = np.mean(self.model.price_history[resource])
-            # to determine market share, we need to know how many orders were placed for that resource
-            # then check if that is the same as the number of orders that we placed
-
-            total_supply = sum(
-                [o.inital_quantity for o in orders if o.resource == resource and o.type == 'sell'])
-            total_demand = sum(
-                [o.inital_quantity for o in orders if o.resource == resource and o.type == 'buy'])
-            market_share = percent(
-                len(self.orders), len([o for o in orders if o.resource == resource and o.type == order.type]))
-            ppu = order.ppu
-
-            # this is somehow creating a runaway effect where the price assumptions are rising constantly
-            # becuase the success of the order is not being used to factor the price assumption
-            failure_degree = order.fulfilled / order.inital_quantity
-
-            change = 0.05
-            # change_factor = (failure_degree-0.5)
-            # change *= change_factor
-            # print("change_factor", change, change_factor, failure_degree)
-            # exit()
-
-            # if i am attempting to sell, and i am not finding buyers, then i should lower my prices
-            if order.type == "sell" and failure_degree < 1/3:
-                top = (top * (1-change))
-                bottom = (bottom * (1-(change*2)))
-            # if i am attempting to sell, and i am finding buyers, then i should raise my prices
-            if order.type == "sell" and failure_degree > 2/3:
-                top = (top * (1+change))
-                bottom = (bottom * (1+change))
-            # if i am attempting to buy, but i am not finding sellers, then i should raise my prices
-            if order.type == "buy" and failure_degree < 1/3:
-                top = (top * (1+(change*2)))
-                bottom = (bottom * (1+change))
-            # if i am attempting to buy, and i am easily finding sellers, then i should lower my prices
-            if order.type == "buy" and failure_degree > 2/3:
-                top = (top * (1-change))
-                bottom = (bottom * (1-change))
-
-            # if the order is being fulfilled at the desired rate, then the price assumption should contract
-            if 1/3 < failure_degree < 2/3:
-                top = (top * (1-change*2))
-                bottom = (bottom * (1+change*2))
-            if top < bottom:
-                top = bottom + 0.0000001
-
-            self.price_assumptions[resource]['top'] = max(top, 0.0000001)
-            self.price_assumptions[resource]['bottom'] = max(bottom, 0.0000001)
-
-            # max(top, 0.0000001)
-            self.price_assumptions[resource]['top'] = top
-            # max(bottom, 0.0000001)
-            self.price_assumptions[resource]['bottom'] = bottom
-
-            ht = round(ht, 2)
-            top = round(top, 2)
-            hb = round(hb, 2)
-            bottom = round(bottom, 2)
-            success_degree = round(order.fulfilled / order.inital_quantity, 2)
-
-            if 0 not in [ht, top, hb, bottom]:
-                # print(ht, top, hb, bottom)
-                t_percent = round((top-ht)/ht*100, 2)
-                b_percent = round((bottom-hb)/hb*100, 2)
-            else:
-                t_percent = 0
-                b_percent = 0
-
-            print("PA:", self.unique_id, order.type, resource, f"T:{ht}=>{top}({t_percent}%)",
-                  f"B:{hb}=>{bottom}({b_percent}%), based on {success_degree}")
+            price_assumption_logic(self, order, orders, trades)
 
             # exit()
 

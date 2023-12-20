@@ -6,6 +6,14 @@ def random_string(length=5):
     return ''.join(random.choice(x) for _ in range(length))
 
 
+def percent(part, whole):
+    # normalize to either 0 or 1
+    # remaining_quantity, inital_quantity
+    if part == 0.0 or whole == 0.0:
+        return 0.0
+    return float(part)/float(whole)
+
+
 class _Base_Order:
     def __init__(self, resource, quantity, ppu, id=None, closed=False):
         self.resource = resource
@@ -156,4 +164,3 @@ class Role:
                     resources[resource] = 0
                 resources[resource] += quantity
         return resources
-
