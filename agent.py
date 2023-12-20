@@ -200,54 +200,40 @@ class EcoAgent(Agent):
 
             # this is somehow creating a runaway effect where the price assumptions are rising constantly
             # becuase the success of the order is not being used to factor the price assumption
-            success_degree = order.fulfilled / order.inital_quantity
+            failure_degree = order.fulfilled / order.inital_quantity
 
-            if order.type == "buy":
-                if success_degree > 0.5:
-                    change = top*.1
-                    top -= change
-                    bottom += change
-                else:
-                    top *= 1.1
+            change = 0.05
+            # change_factor = (failure_degree-0.5)
+            # change *= change_factor
+            # print("change_factor", change, change_factor, failure_degree)
+            # exit()
 
-                if market_share < 1 and self.resources[resource] < self.desired_resources[resource]/4:
-                    displacement = ppu / last_trade_price
-                    top -= displacement
-                    bottom -= displacement
-                elif order.trades and ppu > order.trades[-1].ppu:
-                    displacement = (ppu - last_trade_price)*1.1
-                    top -= displacement
-                    bottom -= displacement
-                elif total_supply > total_demand and ppu > hisorical_average:
-                    displacement = (ppu - hisorical_average)*1.1
-                    top -= displacement
-                    bottom -= displacement
-                elif total_demand > total_supply:
-                    top += hisorical_average/5
-                    bottom += hisorical_average/5
-                else:
-                    top -= hisorical_average/5
-                    bottom -= hisorical_average/5
-            else:
-                weight = 1-success_degree
-                displacement = weight * hisorical_average
+            # if i am attempting to sell, and i am not finding buyers, then i should lower my prices
+            if order.type == "sell" and failure_degree < 1/3:
+                top = (top * (1-change))
+                bottom = (bottom * (1-(change*2)))
+            # if i am attempting to sell, and i am finding buyers, then i should raise my prices
+            if order.type == "sell" and failure_degree > 2/3:
+                top = (top * (1+change))
+                bottom = (bottom * (1+change))
+            # if i am attempting to buy, but i am not finding sellers, then i should raise my prices
+            if order.type == "buy" and failure_degree < 1/3:
+                top = (top * (1+(change*2)))
+                bottom = (bottom * (1+change))
+            # if i am attempting to buy, and i am easily finding sellers, then i should lower my prices
+            if order.type == "buy" and failure_degree > 2/3:
+                top = (top * (1-change))
+                bottom = (bottom * (1-change))
 
-                if order.fulfilled == 0:
-                    top -= displacement/6
-                    bottom -= displacement/6
-                elif market_share < .75:
-                    top -= displacement/7
-                    bottom -= displacement/7
-                elif order.trades and ppu < order.trades[-1].ppu:
-                    overbid = order.trades[-1].ppu - ppu
-                    top += overbid*1.2
-                    bottom += overbid*1.2
-                elif total_demand > total_supply:
-                    top += hisorical_average/5
-                    bottom += hisorical_average/5
-                else:
-                    top -= hisorical_average/5
-                    bottom -= hisorical_average/5
+            # if the order is being fulfilled at the desired rate, then the price assumption should contract
+            if 1/3 < failure_degree < 2/3:
+                top = (top * (1-change*2))
+                bottom = (bottom * (1+change*2))
+            if top < bottom:
+                top = bottom + 0.0000001
+
+            self.price_assumptions[resource]['top'] = max(top, 0.0000001)
+            self.price_assumptions[resource]['bottom'] = max(bottom, 0.0000001)
 
             # max(top, 0.0000001)
             self.price_assumptions[resource]['top'] = top
