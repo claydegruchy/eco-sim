@@ -1,7 +1,7 @@
 from mesa import Agent
 import random
 import numpy as np
-from helper_classes import Role, Order, resource_finder
+from helper_classes import Role, Order, Trade, resource_finder
 
 
 def percent(part, whole):
@@ -29,15 +29,11 @@ class EcoAgent(Agent):
         super().__init__(unique_id, model)
         self.age = 0
         self.resources = {
-            "food": 20,
+            "food": 3,
         }
         self.desired_resources = {}
 
         self.price_assumptions = {
-            "food": {
-                "top": 6,
-                "bottom": 4,
-            },
         }
         # print("Setting up price assumptions")
         for resource in resource_finder():
@@ -65,6 +61,9 @@ class EcoAgent(Agent):
     def update_role(self, role):
         self.role = role
         self.desired_resources = role.desired_resources
+        for resource in resource_finder():
+            if resource not in self.desired_resources:
+                self.desired_resources[resource] = 0
 
     def clear_orders(self):
         self.last_order_count = len(self.orders)
@@ -82,14 +81,12 @@ class EcoAgent(Agent):
         self.consume_resources()
         self.produce_resources()
         self.trade()
-        self.clear_orders()
         self.age += 1
 
     def agent_name(self):
         return f"Agent {self.unique_id}"
 
     def get_stat(self, attr):
-
         return getattr(self, attr)
 
     # resouce handlers
@@ -108,10 +105,12 @@ class EcoAgent(Agent):
 
     def consume_resources(self):
         # Agent resource consumption logic
-        self.remove_resource("food", 1)
-        # print("Agent consuming resources", self.unique_id, self.resources)
-        if self.get_resource("food") < 1:
+        if self.money <= 0:
+            self.money = 0
             self.starve()
+        # rot food
+        current = self.get_resource("food")
+        self.remove_resource("food", current*0.01)
 
     def produce_resources(self):
         self.last_production = self.role.make_recipe(self)
@@ -141,11 +140,10 @@ class EcoAgent(Agent):
         quantity = round(quantity, 1)
         if quantity > -1 and quantity < 1:
             quantity = 0
+        # stop the dickhead agents from selling more than they have
+        if quantity > self.resources[resource]:
+            quantity = self.resources[resource]
         price = self.random_price_assumption(resource)
-        # print("market_average", market_average)
-        # print("average_price_assumption", price)
-        # print("favorability", favorability)
-        # print("quantity", quantity)
 
         if quantity < 0:
             if self.money <= 0:
@@ -173,75 +171,107 @@ class EcoAgent(Agent):
             )
             self.orders.append(order)
 
-    def update_price_assumption(self, order: Order):
+    def update_price_assumption(self, orders: list[Order], trades: list[Trade]):
         # dont base the assumptions directly on the market price
         # this is factored when choosing the sell price in the trade function
         # this should only use the orders that have been fulfilled
         # the ideal situation is to have a 50/50 split of fulfilled orders
+        for order in orders:
+            if order.initator != self:
+                continue
+            # for order in orders:
+            resource = order.resource
+            top = self.price_assumptions[resource]['top']
+            bottom = self.price_assumptions[resource]['bottom']
+            ht = self.price_assumptions[resource]['top']
+            hb = self.price_assumptions[resource]['bottom']
+            last_trade_price = self.model.price_history[resource][-1]
+            hisorical_average = np.mean(self.model.price_history[resource])
+            # to determine market share, we need to know how many orders were placed for that resource
+            # then check if that is the same as the number of orders that we placed
 
-        # for order in orders:
-        resource = order.resource
-        top = self.price_assumptions[resource]['top']
-        bottom = self.price_assumptions[resource]['bottom']
+            total_supply = sum(
+                [o.inital_quantity for o in orders if o.resource == resource and o.type == 'sell'])
+            total_demand = sum(
+                [o.inital_quantity for o in orders if o.resource == resource and o.type == 'buy'])
+            market_share = percent(
+                len(self.orders), len([o for o in orders if o.resource == resource and o.type == order.type]))
+            ppu = order.ppu
 
-        ht = top
-        hb = bottom
+            # this is somehow creating a runaway effect where the price assumptions are rising constantly
+            # becuase the success of the order is not being used to factor the price assumption
+            success_degree = order.fulfilled / order.inital_quantity
 
-        ppu = order.ppu
+            if order.type == "buy":
+                if success_degree > 0.5:
+                    change = top*.1
+                    top -= change
+                    bottom += change
+                else:
+                    top *= 1.1
 
-        # this is somehow creating a runaway effect where the price assumptions are rising constantly
-        # becuase the success of the order is not being used to factor the price assumption
-        failure_degree = order.fulfilled / order.inital_quantity
+                if market_share < 1 and self.resources[resource] < self.desired_resources[resource]/4:
+                    displacement = ppu / last_trade_price
+                    top -= displacement
+                    bottom -= displacement
+                elif order.trades and ppu > order.trades[-1].ppu:
+                    displacement = (ppu - last_trade_price)*1.1
+                    top -= displacement
+                    bottom -= displacement
+                elif total_supply > total_demand and ppu > hisorical_average:
+                    displacement = (ppu - hisorical_average)*1.1
+                    top -= displacement
+                    bottom -= displacement
+                elif total_demand > total_supply:
+                    top += hisorical_average/5
+                    bottom += hisorical_average/5
+                else:
+                    top -= hisorical_average/5
+                    bottom -= hisorical_average/5
+            else:
+                weight = 1-success_degree
+                displacement = weight * hisorical_average
 
-        change = 0.05
-        # change_factor = (failure_degree-0.5)
-        # change *= change_factor
-        # print("change_factor", change, change_factor, failure_degree)
-        # exit()
+                if order.fulfilled == 0:
+                    top -= displacement/6
+                    bottom -= displacement/6
+                elif market_share < .75:
+                    top -= displacement/7
+                    bottom -= displacement/7
+                elif order.trades and ppu < order.trades[-1].ppu:
+                    overbid = order.trades[-1].ppu - ppu
+                    top += overbid*1.2
+                    bottom += overbid*1.2
+                elif total_demand > total_supply:
+                    top += hisorical_average/5
+                    bottom += hisorical_average/5
+                else:
+                    top -= hisorical_average/5
+                    bottom -= hisorical_average/5
 
-        # if i am attempting to sell, and i am not finding buyers, then i should lower my prices
-        if order.type == "sell" and failure_degree < 1/3:
-            top = (top * (1-change))
-            bottom = (bottom * (1-(change*2)))
-        # if i am attempting to sell, and i am finding buyers, then i should raise my prices
-        if order.type == "sell" and failure_degree > 2/3:
-            top = (top * (1+change))
-            bottom = (bottom * (1+change))
-        # if i am attempting to buy, but i am not finding sellers, then i should raise my prices
-        if order.type == "buy" and failure_degree < 1/3:
-            top = (top * (1+(change*2)))
-            bottom = (bottom * (1+change))
-        # if i am attempting to buy, and i am easily finding sellers, then i should lower my prices
-        if order.type == "buy" and failure_degree > 2/3:
-            top = (top * (1-change))
-            bottom = (bottom * (1-change))
+            # max(top, 0.0000001)
+            self.price_assumptions[resource]['top'] = top
+            # max(bottom, 0.0000001)
+            self.price_assumptions[resource]['bottom'] = bottom
 
-        # if the order is being fulfilled at the desired rate, then the price assumption should contract
-        if 1/3 < failure_degree < 2/3:
-            top = (top * (1-change*2))
-            bottom = (bottom * (1+change*2))
-        if top < bottom:
-            top = bottom + 0.0000001
+            ht = round(ht, 2)
+            top = round(top, 2)
+            hb = round(hb, 2)
+            bottom = round(bottom, 2)
+            success_degree = round(order.fulfilled / order.inital_quantity, 2)
 
-        self.price_assumptions[resource]['top'] = max(top, 0.0000001)
-        self.price_assumptions[resource]['bottom'] = max(bottom, 0.0000001)
+            if 0 not in [ht, top, hb, bottom]:
+                # print(ht, top, hb, bottom)
+                t_percent = round((top-ht)/ht*100, 2)
+                b_percent = round((bottom-hb)/hb*100, 2)
+            else:
+                t_percent = 0
+                b_percent = 0
 
-        ht = round(ht, 2)
-        top = round(top, 2)
-        hb = round(hb, 2)
-        bottom = round(bottom, 2)
-        failure_degree = round(order.fulfilled / order.inital_quantity, 2)
+            print("PA:", self.unique_id, order.type, resource, f"T:{ht}=>{top}({t_percent}%)",
+                  f"B:{hb}=>{bottom}({b_percent}%), based on {success_degree}")
 
-        if 0 not in [ht, top, hb, bottom]:
-            # print(ht, top, hb, bottom)
-            t_percent = round((top-ht)/ht*100, 2)
-            b_percent = round((bottom-hb)/hb*100, 2)
-        else:
-            t_percent = 0
-            b_percent = 0
-
-        print("PA:", self.unique_id, order.type, resource, f"T:{ht}=>{top}({t_percent}%)",
-              f"B:{hb}=>{bottom}({b_percent}%), based on {failure_degree}")
+            # exit()
 
     def change_role(self):
         new_role = self.model.find_role(self)

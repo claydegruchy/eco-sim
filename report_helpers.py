@@ -71,7 +71,8 @@ class ColourMaker:
         self.current = 0
 
 
-selected_agent_stats = ['age', 'money', 'production',
+selected_agent_stats = ['age', 'money', 
+                        'production',
                         'last_production', 'last_trade', 'last_order_count']
 agent_resources = list(resource_finder())
 
@@ -97,13 +98,33 @@ def color_red_or_green(val):
 
 
 def agent_table_generator(m):
-    return pd.DataFrame([[a.unique_id, a.role.name] +
+    frame = pd.DataFrame([[a.unique_id, a.role.name] +
                          [a.get_stat(stat) for stat in selected_agent_stats] +
                          [a.get_resource(
                              res) for res in agent_resources]
                          for a in m.schedule.agents],
-                        columns=["id", "role",]+selected_agent_stats+agent_resources) \
-        .style.applymap(lambda x: 'background-color : red' if x < 5 else 'background-color : green', subset=['food'])\
-        .applymap(lambda x: 'background-color : yellow' if x < 15 and x > 5 else '', subset=['food'])
+                         columns=["id", "role",]+selected_agent_stats+agent_resources) \
+        .style.map(lambda x: 'background-color : red' if x < 5 else 'background-color : green', subset=['food'])\
+        .map(lambda x: 'background-color : yellow' if x < 15 and x > 5 else '', subset=['food'])\
+
+
+    for resource in agent_resources:
+        frame.map(
+            lambda x: 'background-color : LightGray' if x == 0 else '', subset=[resource])
+
+    return frame
+
     # style food column red if under 5, green if over 15, yellow if between
-    # .applymap(lambda x: 'background-color : yellow' if x < 15 and x > 5 else '', subset=['food'])
+    # .map(lambda x: 'background-color : yellow' if x < 15 and x > 5 else '', subset=['food'])
+
+
+class EventReport:
+    def __init__(self,):
+        self.events = [["Server", "Server started."]]
+
+    def add_event(self, actor, text):
+        self.events.append([actor, text])
+
+    def get_events(self):
+        # return the last 10 events
+        return pd.DataFrame(self.events[-10:], columns=["Actor", "Event"])

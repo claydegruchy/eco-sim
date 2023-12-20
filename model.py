@@ -22,7 +22,7 @@ from numpy import mean, median
 
 
 class EcoModel(Model):
-    def __init__(self, width, height, num_agents):
+    def __init__(self, width, height, num_agents, event_reporter=None):
         super().__init__()
         print("Model created, proforming setup...")
         self.grid = SingleGrid(width, height, True)
@@ -30,6 +30,7 @@ class EcoModel(Model):
 
         self.current_id = 0
         self.num_agents = num_agents
+        self.event_reporter = event_reporter
 
         print("Setting up resources")
         potential_resources = resource_finder()
@@ -40,11 +41,12 @@ class EcoModel(Model):
         # self.sell_orders = []
         self.orders = []
         self.price_history = dict(
-            zip(potential_resources, [[5] for x in range(len(potential_resources))]))
+            zip(potential_resources, [[1] for x in range(len(potential_resources))]))
 
         # report variables
         self.total_trades = 0
         self.day_trades = 0
+        self.day_trade_quantity = 0
         self.total_food = 0
         self.total_money = 0
         self.average_money = 0
@@ -66,9 +68,10 @@ class EcoModel(Model):
                            "Median Money": "median_money",
                            "Total Trades": "total_trades",
                            "Day Trades": "day_trades",
+                           "Day Trade Quantity": "day_trade_quantity",
                            "Dead Agents": lambda m: len(m.dead_agents),
                            }
-    # list of resources rpices
+        # list of resources rpices
         for resource in potential_resources:
             model_reporters[resource +
                             "_price"] = lambda m, resource=resource: m.price_history[resource][-1]
@@ -123,6 +126,7 @@ class EcoModel(Model):
     def resolve_orders(self):
         print("Market opened")
         self.day_trades = 0
+        self.day_trade_quantity = 0
         total_orders = len(self.orders)
 
         for resource in set([order.resource for order in self.orders]):
@@ -186,6 +190,10 @@ class EcoModel(Model):
 
         self.total_trades += 1
         self.day_trades += 1
+        self.day_trade_quantity += trade.quantity/10
+
+        self.event_reporter.add_event(
+            trade.sell_order.initator.agent_name(), f"{round(trade.quantity,2)} {trade.resource} sold at {round(trade.ppu,3)} each")
 
     def next_id(self):
         self.current_id += 1
@@ -213,8 +221,10 @@ class EcoModel(Model):
     def update_price_assumptions(self):
 
         # this needs reversal as we now have more orders than agents
-        for order in self.orders:
-            order.initator.update_price_assumption(order)
+        for agent in self.schedule.agents:
+            agent.update_price_assumption(self.orders, self.trades)
+        # for order in self.orders:
+            # order.initator.update_price_assumption(order)
             # for agent in self.schedule.agents:
         #     orders = [order for order in self.orders if order.initator == agent]
         #     for order in orders:
@@ -238,6 +248,12 @@ class EcoModel(Model):
         self.dead_agents.append(agent)
         self.create_agent(random.choice(roles))
 
+    def clean_up(self):
+        for agent in self.schedule.agents:
+            agent.clear_orders()
+        self.trades.clear()
+        self.orders.clear()
+
     def step(self):
         self.schedule.step()
 
@@ -252,5 +268,5 @@ class EcoModel(Model):
             self.running = False
         self.generate_stats()
         self.datacollector.collect(self)
-        self.trades.clear()
-        self.orders.clear()
+
+        self.clean_up()
