@@ -249,8 +249,10 @@ class EcoAgent(Agent):
                     top -= hisorical_average/5
                     bottom -= hisorical_average/5
 
-            self.price_assumptions[resource]['top'] = max(top, 0.0000001)
-            self.price_assumptions[resource]['bottom'] = max(bottom, 0.0000001)
+            # max(top, 0.0000001)
+            self.price_assumptions[resource]['top'] = top
+            # max(bottom, 0.0000001)
+            self.price_assumptions[resource]['bottom'] = bottom
 
             ht = round(ht, 2)
             top = round(top, 2)

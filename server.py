@@ -148,8 +148,7 @@ height = int(num_agents / width) + 1
 grid = CanvasGrid(agent_portrayal, 10, 10, 800, 500)
 
 
-
-int("[Server]", "setting up w/h", width, height)
+print("[Server]", "setting up w/h", width, height)
 
 # Create and launch the server
 server = ModularServer(
