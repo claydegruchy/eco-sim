@@ -1,8 +1,8 @@
 import pandas as pd
-
+from mesa.visualization.modules import TextElement
 import base64
 import io
-from helper_classes import resource_finder, roles
+from agent_role_config import resource_finder, roles
 
 
 def chart(df):
@@ -71,7 +71,7 @@ class ColourMaker:
         self.current = 0
 
 
-selected_agent_stats = ['age', 'money', 
+selected_agent_stats = ['age', 'money',
                         'production',
                         'last_production', 'last_trade', 'last_order_count']
 agent_resources = list(resource_finder())
@@ -128,3 +128,27 @@ class EventReport:
     def get_events(self):
         # return the last 10 events
         return pd.DataFrame(self.events[-10:], columns=["Actor", "Event"])
+
+
+class PandasChartElement(TextElement):
+    def __init__(self, lambda_data):
+        self.lambda_data = lambda_data
+
+    def render(self, model):
+        return chart(self.lambda_data(model))
+
+
+class TableElement(TextElement):
+    def __init__(self, lambda_data):
+        self.lambda_data = lambda_data
+
+    def render(self, model):
+        return table_style(self.lambda_data(model))
+
+
+class SimpleText(TextElement):
+    def __init__(self, lambda_data):
+        self.lambda_data = lambda_data
+
+    def render(self, model):
+        return self.lambda_data(model)

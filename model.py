@@ -5,7 +5,8 @@ from mesa.datacollection import DataCollector
 import random
 import statistics
 from agent import EcoAgent
-from helper_classes import Order, Trade, farmer, roles, resource_finder
+from simulation_classes import Order, Trade
+from agent_role_config import roles, resource_finder
 from numpy import mean, median
 
 

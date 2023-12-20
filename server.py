@@ -1,35 +1,11 @@
-from mesa.visualization.modules import CanvasGrid, ChartModule, TextElement, PieChartModule
+from mesa.visualization.modules import CanvasGrid, ChartModule, PieChartModule
 from mesa.visualization.ModularVisualization import ModularServer
-from report_helpers import table_style, ColourMaker, chart, agent_table_generator, EventReport
+from report_helpers import table_style, ColourMaker, chart, agent_table_generator, EventReport, PandasChartElement, TableElement, SimpleText
 import math
-import pandas as pd
+# import pandas as pd
 from model import EcoModel
 import hashlib
-from helper_classes import resource_finder, roles
-
-
-class PandasChartElement(TextElement):
-    def __init__(self, lambda_data):
-        self.lambda_data = lambda_data
-
-    def render(self, model):
-        return chart(self.lambda_data(model))
-
-
-class TableElement(TextElement):
-    def __init__(self, lambda_data):
-        self.lambda_data = lambda_data
-
-    def render(self, model):
-        return table_style(self.lambda_data(model))
-
-
-class SimpleText(TextElement):
-    def __init__(self, lambda_data):
-        self.lambda_data = lambda_data
-
-    def render(self, model):
-        return self.lambda_data(model)
+from agent_role_config import resource_finder, roles
 
 
 def colour_gen(word):

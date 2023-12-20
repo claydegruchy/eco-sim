@@ -1,7 +1,8 @@
 from mesa import Agent
 import random
 import numpy as np
-from helper_classes import Role, Order, Trade, resource_finder
+from simulation_classes import Order, Trade
+from agent_role_config import roles, resource_finder
 
 
 def percent(part, whole):
