@@ -26,11 +26,6 @@ def agent_portrayal(agent):
     money = (agent.money/100)+0.5  # clamp(int(agent.money), 0, 255)/255
     food = clamp(clamp(int(agent.get_resource('food')), 0, 255)/20, 0, 1)
     role = colour_gen(agent.role.name)
-    # print(role, food)
-
-    # agents who have a lot of money are green
-    # this operates on a sliding scale to red where they are broke
-
     portrayal = {
         # "Shape": "circle",
         # "r": 0.5,
@@ -56,10 +51,10 @@ def agent_portrayal(agent):
     return portrayal
 
 
-event_reporter = EventReport()
 num_agents = 30
-
-
+print("[Server]", "setting up", num_agents, "agents")
+# trade report
+print("[Server]", "setting up trade report")
 trade_report_data = [
     {"Label": "Day Trades", "Color": colour_str("Day Trades")},
     {"Label": "Day Trade Quantity", "Color": colour_str("Day Trade Quantity")},
@@ -68,9 +63,7 @@ trade_report_data = [
 
 trade_report_colours = ColourMaker()
 
-
 for resource in resource_finder():
-
     trade_report_data.append({"Label": resource+"_price",
                              "Color": trade_report_colours.selected(0.5)})
 
@@ -79,6 +72,8 @@ for resource in resource_finder():
     trade_report_colours.next()
 
 
+# agnet report
+print("[Server]", "setting up agent report")
 agent_report_data = [
     {"Label": "Agents", "Color": colour_str("Agents")},
     # {"Label": "Dead Agents", "Color": colour_str("Dead Agents")},
@@ -86,42 +81,37 @@ agent_report_data = [
 for role in roles:
     agent_report_data.append({"Label": role.name+"_count",
                               "Color": colour_str(role.name)})
-
-
-# agent_report_data = []
+# event report
+print("[Server]", "setting up event report")
+event_reporter = EventReport()
 
 trade_report = ChartModule(trade_report_data)
 agent_report = ChartModule(agent_report_data)
 event_report = TableElement(lambda m: event_reporter.get_events())
 
-
-# chart_element = ChartModule(
-#     chart_data
-# )
-
-
+# role distribution pie chart
+print("[Server]", "setting up role distribution pie chart")
 pie_chat = PieChartModule(
     [{"Label": role.name+"_count",
         "Color": colour_str(role.name)} for role in roles]
-
-    # [{"Label": "Farmer_count", "Color": colour_str("Farmer_count")}]
 )
 
-table_all_model_data = TableElement(
-    lambda m: m.datacollector.get_model_vars_dataframe())
-
+# simple, high level KPIs
+print("[Server]", "setting up simple, high level KPIs")
 simple_kpis = SimpleText(lambda m: f"Dead Agents: {len(m.dead_agents)}")
 
-
-agent_resources = list(resource_finder())
+# breakdown of agent stats
+print("[Server]", "setting up agent stat table")
 table_agent_stats = TableElement(
     lambda m: agent_table_generator(m)
 )
 
-
+# general stats needed for engine
+print("[Server]", "setting up engine stats")
 width = int(math.sqrt(num_agents))
 height = int(num_agents / width) + 1
 grid = CanvasGrid(agent_portrayal, 10, 10, 800, 500)
+
 
 
 print("[Server]", "setting up w/h", width, height)
@@ -132,16 +122,11 @@ server = ModularServer(
     [
         # test,
         event_report,
-
         simple_kpis,
         table_agent_stats,
-
-
         trade_report,
         grid,
         agent_report,
-        #  agent_stats,
-        #  table_all_model_data
         pie_chat,
     ],
     "Eco Simulation",

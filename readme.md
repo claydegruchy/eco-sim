@@ -17,6 +17,7 @@ the goal is to check relative prices based on trade connections and abundance. t
 6. [ ]allow trade between distant villages
 
 # agent logic
+rough outline:
 1. consume what i have
 2. produce what i can with my resouces
 3. place a sell order based on my surplus
@@ -24,6 +25,8 @@ the goal is to check relative prices based on trade connections and abundance. t
 5. choose to pay the outcome of the bidding process for buy and sell
 6. if i run out of food, die or change job
 7. (stretch goal) if i have ample food, reproduce
+
+important agent logic is stored in the `/logic` folder, mostly.
 
 # practical stuff
 ## installing
