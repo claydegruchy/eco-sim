@@ -5,7 +5,7 @@ from simulation_classes import Order, Trade, percent
 from agent_role_config import roles, resource_finder
 import sys
 sys.path.append('logic/')
-from agent_price_assumption_logic import price_assumption_logic  # noqa: E402
+from agent_price_assumption_logic import self_deducted_logic, original_paper_logic  # noqa: E402
 from agent_trade_logic import trade_logic  # noqa: E402
 
 
@@ -119,14 +119,12 @@ class EcoAgent(Agent):
         # this is factored when choosing the sell price in the trade function
         # this should only use the orders that have been fulfilled
         # the ideal situation is to have a 50/50 split of fulfilled orders
-        for order in orders:
-            if order.initator != self:
-                continue
-            # for order in orders:
 
-            price_assumption_logic(self, order, orders, trades)
+        # price_assumption_logic(self, orders, trades)
+        original_paper_logic(self, orders, trades)
+        
 
-            # exit()
+        # exit()
 
     def change_role(self):
         new_role = self.model.find_role(self)
