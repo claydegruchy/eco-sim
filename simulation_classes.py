@@ -101,15 +101,17 @@ class Recipe:
         # old_inventory = agent.resources.copy()
         if not self.can_make(agent):
             return 0
+        produced = dict()
 
         for resource, quantity in self.requires.items():
             agent.remove_resource(resource, (quantity))
         for resource, quantity in self.produces.items():
             # here is a gaussian distribution where lower numbers produce smaller outputs
             # quantity = quantity * random.gauss(agent.production, 0.1)
+            produced[resource] = quantity
 
             agent.add_resource(resource, quantity)
-            return quantity
+        return produced
 
     def get_profitability(self, agent):
         profitability = 0
@@ -153,6 +155,7 @@ class Role:
             else:
                 print("[Role]Recipe cannot be made", recipe)
         print("[Role]No recipes can be made", agent.unique_id, self.name)
+        return {}
         # idle tax
         agent.money -= 2
 

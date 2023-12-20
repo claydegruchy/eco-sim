@@ -2,7 +2,7 @@ from mesa.visualization.modules import CanvasGrid, ChartModule, PieChartModule
 from mesa.visualization.ModularVisualization import ModularServer
 from report_helpers import table_style, ColourMaker, chart, agent_table_generator, EventReport, PandasChartElement, TableElement, SimpleText
 import math
-# import pandas as pd
+import pandas as pd
 from model import EcoModel
 import hashlib
 from agent_role_config import resource_finder, roles
@@ -63,6 +63,12 @@ trade_report_data = [
 
 trade_report_colours = ColourMaker()
 
+
+# production statistics
+print("[Server]", "setting up production statistics")
+chart_production_data = []
+
+
 for resource in resource_finder():
     trade_report_data.append({"Label": resource+"_price",
                              "Color": trade_report_colours.selected(0.5)})
@@ -70,6 +76,11 @@ for resource in resource_finder():
     trade_report_data.append({"Label": resource+"_avg_assummed",
                              "Color": trade_report_colours.selected(1)})
     trade_report_colours.next()
+    chart_production_data.append(
+        {"Label": resource+"_production", "Color": colour_str(resource)})
+
+
+chart_production = ChartModule(chart_production_data)
 
 
 # agnet report
@@ -106,12 +117,12 @@ table_agent_stats = TableElement(
     lambda m: agent_table_generator(m)
 )
 
+
 # general stats needed for engine
 print("[Server]", "setting up engine stats")
 width = int(math.sqrt(num_agents))
 height = int(num_agents / width) + 1
 grid = CanvasGrid(agent_portrayal, 10, 10, 800, 500)
-
 
 
 print("[Server]", "setting up w/h", width, height)
@@ -124,6 +135,7 @@ server = ModularServer(
         event_report,
         simple_kpis,
         table_agent_stats,
+        chart_production,
         trade_report,
         grid,
         agent_report,

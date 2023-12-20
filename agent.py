@@ -9,9 +9,6 @@ from agent_price_assumption_logic import price_assumption_logic  # noqa: E402
 from agent_trade_logic import trade_logic  # noqa: E402
 
 
-
-
-
 class EcoAgent(Agent):
     def __init__(self, unique_id, model, role, color="red"):
         super().__init__(unique_id, model)
@@ -40,7 +37,7 @@ class EcoAgent(Agent):
         self.update_role(role)
         self.money = 100  # Starting money
         self.production = random.uniform(0, 2)  # Starting production
-        self.last_production = 0
+        self.last_production = dict()
         self.last_trade = 0
 
         self.orders = []
@@ -102,6 +99,12 @@ class EcoAgent(Agent):
 
     def produce_resources(self):
         self.last_production = self.role.make_recipe(self)
+        for resource in resource_finder():
+            if resource not in self.last_production:
+                quantity = 0
+            else:
+                quantity = self.last_production[resource]
+            self.model.production_history[resource][-1] += quantity
 
     def update_reports(self):
         row = {"agent_id": self.unique_id, "food": self.resources['food']}

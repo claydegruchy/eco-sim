@@ -1,6 +1,20 @@
 # eco-sim
 yet another implimentation of [Emergent Economies for Role Playing Games](https://ianparberry.com/pubs/econ.pdf), a simulator for a medieval economy. 
 
+
+# practical stuff
+## installing
+- get python3
+- activate a venv
+- `pip install -r requirements.txt`
+## running
+- `python3 server.py`
+## config
+most config is in the code but some important parts are broken out
+- **agent price logic** is stored in `/logic`
+- **agent trade logic** is stored in `/logic`
+
+
 # what do we want to achieve
 the goal is to check relative prices based on trade connections and abundance. this should let us:
 - if a trade line is broken, how are prices affected?
@@ -28,12 +42,3 @@ rough outline:
 
 important agent logic is stored in the `/logic` folder, mostly.
 
-# practical stuff
-## installing
-- get python3
-- activate a venv
-- `pip install -r requirements.txt`
-## running
-- `python3 server.py`
-## config
-most config is in the code but if you want to add or remove roles or crafting recepies then edit `helper_classes.py`

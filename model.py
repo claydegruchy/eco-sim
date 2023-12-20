@@ -38,11 +38,13 @@ class EcoModel(Model):
 
         # trade variables
         self.trades = []
-        # self.buy_orders = []
-        # self.sell_orders = []
         self.orders = []
         self.price_history = dict(
             zip(potential_resources, [[1] for x in range(len(potential_resources))]))
+
+        # production variables
+        self.production_history = dict(
+            zip(potential_resources, [[0] for x in range(len(potential_resources))]))
 
         # report variables
         self.total_trades = 0
@@ -80,6 +82,9 @@ class EcoModel(Model):
                             "_avg_assummed"] = lambda m, resource=resource: mean([a.average_price_assumption(resource) for a in m.schedule.agents])
             model_reporters[resource +
                             "_median_assummed"] = lambda m, resource=resource: median([a.average_price_assumption(resource) for a in m.schedule.agents])
+            # we need to neg index twice here as we append a new value and i dont know where in the step cycle the report snapshot is taken
+            model_reporters[resource +
+                            "_production"] = lambda m, resource=resource: m.production_history[resource][-2]
 
         # role counts
         for role in roles:
@@ -219,17 +224,15 @@ class EcoModel(Model):
             average_price = sum(trades_ppus) / len(trades_ppus)
             self.price_history[resource].append(average_price)
 
-    def update_price_assumptions(self):
+    def update_production_history(self):
+        print("self.production_history1", self.production_history)
+        for k, v in self.production_history.items():
+            v.append(0)
+        print("self.production_history2", self.production_history)
 
-        # this needs reversal as we now have more orders than agents
+    def update_price_assumptions(self):
         for agent in self.schedule.agents:
             agent.update_price_assumption(self.orders, self.trades)
-        # for order in self.orders:
-            # order.initator.update_price_assumption(order)
-            # for agent in self.schedule.agents:
-        #     orders = [order for order in self.orders if order.initator == agent]
-        #     for order in orders:
-        #         agent.update_price_assumptions(order)
 
     def find_role(self, agent):
         profitability = [
@@ -262,7 +265,7 @@ class EcoModel(Model):
 
         self.current_agents = self.schedule.get_agent_count()
         self.update_trade_history()
-        self.update_price_assumptions()
+        self.update_production_history()
 
         # if all agents are dead, stop the simulation
         if len(self.schedule.agents) == 0:
@@ -271,3 +274,4 @@ class EcoModel(Model):
         self.datacollector.collect(self)
 
         self.clean_up()
+        self.update_price_assumptions()
