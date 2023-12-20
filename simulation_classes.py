@@ -151,13 +151,13 @@ class Role:
                     return recipe.make_recipe(agent)
                 else:
                     print("[Role]Recipe not profitable",
-                          agent.unique_id, recipe.name)
+                          agent.unique_id, recipe, recipe.get_profitability(agent))
             else:
-                print("[Role]Recipe cannot be made", recipe)
+                print("[Role]Recipe cannot be made", recipe,)
         print("[Role]No recipes can be made", agent.unique_id, self.name)
-        return {}
         # idle tax
         agent.money -= 2
+        return {}
 
     def get_created_resources(self):
         resources = {}

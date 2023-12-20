@@ -95,7 +95,8 @@ class EcoAgent(Agent):
             self.starve()
         # rot food
         current = self.get_resource("food")
-        self.remove_resource("food", current*0.01)
+        if current > self.desired_resources["food"]:
+            self.remove_resource("food", current*0.01)
 
     def produce_resources(self):
         self.last_production = self.role.make_recipe(self)
@@ -122,7 +123,7 @@ class EcoAgent(Agent):
             if order.initator != self:
                 continue
             # for order in orders:
-            
+
             price_assumption_logic(self, order, orders, trades)
 
             # exit()
